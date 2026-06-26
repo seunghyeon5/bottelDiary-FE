@@ -1,13 +1,13 @@
 //
-//  HelloXcodeUITestsLaunchTests.swift
-//  HelloXcodeUITests
+//  bottleDiaryUITestsLaunchTests.swift
+//  bottleDiaryUITests
 //
 //  Created by Seung hyeon Hong on 1/25/25.
 //
 
 import XCTest
 
-final class HelloXcodeUITestsLaunchTests: XCTestCase {
+final class bottleDiaryUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

@@ -12,50 +12,50 @@
 			containerPortal = 647A2CDA2D44CA47002FAA54 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 647A2CE12D44CA47002FAA54;
-			remoteInfo = HelloXcode;
+			remoteInfo = bottleDiary;
 		};
 		647A2D032D44CA48002FAA54 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 647A2CDA2D44CA47002FAA54 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 647A2CE12D44CA47002FAA54;
-			remoteInfo = HelloXcode;
+			remoteInfo = bottleDiary;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		647A2CE22D44CA47002FAA54 /* HelloXcode.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelloXcode.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		647A2CF82D44CA48002FAA54 /* HelloXcodeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HelloXcodeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		647A2D022D44CA48002FAA54 /* HelloXcodeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HelloXcodeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		647A2CE22D44CA47002FAA54 /* bottleDiary.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = bottleDiary.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		647A2CF82D44CA48002FAA54 /* bottleDiaryTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = bottleDiaryTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		647A2D022D44CA48002FAA54 /* bottleDiaryUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = bottleDiaryUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		647A2D0A2D44CA48002FAA54 /* Exceptions for "HelloXcode" folder in "HelloXcode" target */ = {
+		647A2D0A2D44CA48002FAA54 /* Exceptions for "bottleDiary" folder in "bottleDiary" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 647A2CE12D44CA47002FAA54 /* HelloXcode */;
+			target = 647A2CE12D44CA47002FAA54 /* bottleDiary */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		647A2CE42D44CA47002FAA54 /* HelloXcode */ = {
+		647A2CE42D44CA47002FAA54 /* bottleDiary */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				647A2D0A2D44CA48002FAA54 /* Exceptions for "HelloXcode" folder in "HelloXcode" target */,
+				647A2D0A2D44CA48002FAA54 /* Exceptions for "bottleDiary" folder in "bottleDiary" target */,
 			);
-			path = HelloXcode;
+			path = bottleDiary;
 			sourceTree = "<group>";
 		};
-		647A2CFB2D44CA48002FAA54 /* HelloXcodeTests */ = {
+		647A2CFB2D44CA48002FAA54 /* bottleDiaryTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = HelloXcodeTests;
+			path = bottleDiaryTests;
 			sourceTree = "<group>";
 		};
-		647A2D052D44CA48002FAA54 /* HelloXcodeUITests */ = {
+		647A2D052D44CA48002FAA54 /* bottleDiaryUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = HelloXcodeUITests;
+			path = bottleDiaryUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -88,9 +88,9 @@
 		647A2CD92D44CA47002FAA54 = {
 			isa = PBXGroup;
 			children = (
-				647A2CE42D44CA47002FAA54 /* HelloXcode */,
-				647A2CFB2D44CA48002FAA54 /* HelloXcodeTests */,
-				647A2D052D44CA48002FAA54 /* HelloXcodeUITests */,
+				647A2CE42D44CA47002FAA54 /* bottleDiary */,
+				647A2CFB2D44CA48002FAA54 /* bottleDiaryTests */,
+				647A2D052D44CA48002FAA54 /* bottleDiaryUITests */,
 				647A2CE32D44CA47002FAA54 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -98,9 +98,9 @@
 		647A2CE32D44CA47002FAA54 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				647A2CE22D44CA47002FAA54 /* HelloXcode.app */,
-				647A2CF82D44CA48002FAA54 /* HelloXcodeTests.xctest */,
-				647A2D022D44CA48002FAA54 /* HelloXcodeUITests.xctest */,
+				647A2CE22D44CA47002FAA54 /* bottleDiary.app */,
+				647A2CF82D44CA48002FAA54 /* bottleDiaryTests.xctest */,
+				647A2D022D44CA48002FAA54 /* bottleDiaryUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,9 +108,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		647A2CE12D44CA47002FAA54 /* HelloXcode */ = {
+		647A2CE12D44CA47002FAA54 /* bottleDiary */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 647A2D0B2D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "HelloXcode" */;
+			buildConfigurationList = 647A2D0B2D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "bottleDiary" */;
 			buildPhases = (
 				647A2CDE2D44CA47002FAA54 /* Sources */,
 				647A2CDF2D44CA47002FAA54 /* Frameworks */,
@@ -121,18 +121,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				647A2CE42D44CA47002FAA54 /* HelloXcode */,
+				647A2CE42D44CA47002FAA54 /* bottleDiary */,
 			);
-			name = HelloXcode;
+			name = bottleDiary;
 			packageProductDependencies = (
 			);
-			productName = HelloXcode;
-			productReference = 647A2CE22D44CA47002FAA54 /* HelloXcode.app */;
+			productName = bottleDiary;
+			productReference = 647A2CE22D44CA47002FAA54 /* bottleDiary.app */;
 			productType = "com.apple.product-type.application";
 		};
-		647A2CF72D44CA48002FAA54 /* HelloXcodeTests */ = {
+		647A2CF72D44CA48002FAA54 /* bottleDiaryTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 647A2D102D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "HelloXcodeTests" */;
+			buildConfigurationList = 647A2D102D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "bottleDiaryTests" */;
 			buildPhases = (
 				647A2CF42D44CA48002FAA54 /* Sources */,
 				647A2CF52D44CA48002FAA54 /* Frameworks */,
@@ -144,18 +144,18 @@
 				647A2CFA2D44CA48002FAA54 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				647A2CFB2D44CA48002FAA54 /* HelloXcodeTests */,
+				647A2CFB2D44CA48002FAA54 /* bottleDiaryTests */,
 			);
-			name = HelloXcodeTests;
+			name = bottleDiaryTests;
 			packageProductDependencies = (
 			);
-			productName = HelloXcodeTests;
-			productReference = 647A2CF82D44CA48002FAA54 /* HelloXcodeTests.xctest */;
+			productName = bottleDiaryTests;
+			productReference = 647A2CF82D44CA48002FAA54 /* bottleDiaryTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		647A2D012D44CA48002FAA54 /* HelloXcodeUITests */ = {
+		647A2D012D44CA48002FAA54 /* bottleDiaryUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 647A2D132D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "HelloXcodeUITests" */;
+			buildConfigurationList = 647A2D132D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "bottleDiaryUITests" */;
 			buildPhases = (
 				647A2CFE2D44CA48002FAA54 /* Sources */,
 				647A2CFF2D44CA48002FAA54 /* Frameworks */,
@@ -167,13 +167,13 @@
 				647A2D042D44CA48002FAA54 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				647A2D052D44CA48002FAA54 /* HelloXcodeUITests */,
+				647A2D052D44CA48002FAA54 /* bottleDiaryUITests */,
 			);
-			name = HelloXcodeUITests;
+			name = bottleDiaryUITests;
 			packageProductDependencies = (
 			);
-			productName = HelloXcodeUITests;
-			productReference = 647A2D022D44CA48002FAA54 /* HelloXcodeUITests.xctest */;
+			productName = bottleDiaryUITests;
+			productReference = 647A2D022D44CA48002FAA54 /* bottleDiaryUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -199,7 +199,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 647A2CDD2D44CA47002FAA54 /* Build configuration list for PBXProject "HelloXcode" */;
+			buildConfigurationList = 647A2CDD2D44CA47002FAA54 /* Build configuration list for PBXProject "bottleDiary" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -213,9 +213,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				647A2CE12D44CA47002FAA54 /* HelloXcode */,
-				647A2CF72D44CA48002FAA54 /* HelloXcodeTests */,
-				647A2D012D44CA48002FAA54 /* HelloXcodeUITests */,
+				647A2CE12D44CA47002FAA54 /* bottleDiary */,
+				647A2CF72D44CA48002FAA54 /* bottleDiaryTests */,
+				647A2D012D44CA48002FAA54 /* bottleDiaryUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -271,12 +271,12 @@
 /* Begin PBXTargetDependency section */
 		647A2CFA2D44CA48002FAA54 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 647A2CE12D44CA47002FAA54 /* HelloXcode */;
+			target = 647A2CE12D44CA47002FAA54 /* bottleDiary */;
 			targetProxy = 647A2CF92D44CA48002FAA54 /* PBXContainerItemProxy */;
 		};
 		647A2D042D44CA48002FAA54 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 647A2CE12D44CA47002FAA54 /* HelloXcode */;
+			target = 647A2CE12D44CA47002FAA54 /* bottleDiary */;
 			targetProxy = 647A2D032D44CA48002FAA54 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -290,18 +290,17 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = HelloXcode/Info.plist;
+				INFOPLIST_FILE = bottleDiary/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hong.HelloXcode;
+				PRODUCT_BUNDLE_IDENTIFIER = hong.bottleDiary;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -317,18 +316,17 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = HelloXcode/Info.plist;
+				INFOPLIST_FILE = bottleDiary/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hong.HelloXcode;
+				PRODUCT_BUNDLE_IDENTIFIER = hong.bottleDiary;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -464,12 +462,12 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hong.HelloXcodeTests;
+				PRODUCT_BUNDLE_IDENTIFIER = hong.bottleDiaryTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HelloXcode.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HelloXcode";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/bottleDiary.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/bottleDiary";
 			};
 			name = Debug;
 		};
@@ -482,12 +480,12 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hong.HelloXcodeTests;
+				PRODUCT_BUNDLE_IDENTIFIER = hong.bottleDiaryTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HelloXcode.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HelloXcode";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/bottleDiary.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/bottleDiary";
 			};
 			name = Release;
 		};
@@ -498,12 +496,12 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hong.HelloXcodeUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = hong.bottleDiaryUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = HelloXcode;
+				TEST_TARGET_NAME = bottleDiary;
 			};
 			name = Debug;
 		};
@@ -514,19 +512,19 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hong.HelloXcodeUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = hong.bottleDiaryUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = HelloXcode;
+				TEST_TARGET_NAME = bottleDiary;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		647A2CDD2D44CA47002FAA54 /* Build configuration list for PBXProject "HelloXcode" */ = {
+		647A2CDD2D44CA47002FAA54 /* Build configuration list for PBXProject "bottleDiary" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				647A2D0E2D44CA48002FAA54 /* Debug */,
@@ -535,7 +533,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		647A2D0B2D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "HelloXcode" */ = {
+		647A2D0B2D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "bottleDiary" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				647A2D0C2D44CA48002FAA54 /* Debug */,
@@ -544,7 +542,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		647A2D102D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "HelloXcodeTests" */ = {
+		647A2D102D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "bottleDiaryTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				647A2D112D44CA48002FAA54 /* Debug */,
@@ -553,7 +551,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		647A2D132D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "HelloXcodeUITests" */ = {
+		647A2D132D44CA48002FAA54 /* Build configuration list for PBXNativeTarget "bottleDiaryUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				647A2D142D44CA48002FAA54 /* Debug */,

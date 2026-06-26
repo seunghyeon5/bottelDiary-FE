@@ -1,13 +1,13 @@
 //
-//  HelloXcodeUITests.swift
-//  HelloXcodeUITests
+//  bottleDiaryUITests.swift
+//  bottleDiaryUITests
 //
 //  Created by Seung hyeon Hong on 1/25/25.
 //
 
 import XCTest
 
-final class HelloXcodeUITests: XCTestCase {
+final class bottleDiaryUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
