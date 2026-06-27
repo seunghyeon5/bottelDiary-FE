@@ -4,7 +4,7 @@ import Foundation
 enum OnboardingStep {
     case login
     case gender
-    case phone
+    case signup
     case completed
 }
 
@@ -39,4 +39,30 @@ struct ExchangeStory: Identifiable {
     let myEntry: DiaryEntry
     let partnerEntry: DiaryEntry
     let isActive: Bool
+}
+
+// 회원가입 요청에 사용하는 API 모델
+struct SignupRequest: Codable {
+    let gender: String
+    let email: String
+    let password: String
+    let phoneNum: String
+    let nickname: String
+}
+
+// 회원가입 응답을 받기 위한 API 모델
+struct SignupResponse: Codable {
+    let id: Int?
+    let email: String?
+    let nickname: String?
+    let gender: String?
+    let phoneNum: String?
+}
+
+// 서버 에러 메시지를 받기 위한 공통 API 모델
+struct APIErrorResponse: Codable {
+    let status: Int?
+    let error: String?
+    let message: String?
+    let path: String?
 }

@@ -12,8 +12,8 @@ struct RootView: View {
                 LoginView(viewModel: viewModel)
             case .gender:
                 GenderOnboardingView(viewModel: viewModel)
-            case .phone:
-                PhoneOnboardingView(viewModel: viewModel)
+            case .signup:
+                SignupOnboardingView(viewModel: viewModel)
             case .completed:
                 MainHomeView(viewModel: viewModel, isPresentingComposer: $isPresentingComposer)
             }
@@ -61,6 +61,13 @@ struct LoginView: View {
                 }
                 .buttonStyle(FilledPrimaryButtonStyle())
 
+                if !viewModel.authNoticeMessage.isEmpty {
+                    Text(viewModel.authNoticeMessage)
+                        .font(.system(size: 14, weight: .medium))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Color(hex: "#BCE3F1"))
+                }
+
                 HStack(spacing: 6) {
                     Text("처음이신가요?")
                         .foregroundStyle(.white.opacity(0.7))
@@ -75,12 +82,6 @@ struct LoginView: View {
             }
         }
     }
-}
-
-#Preview {
-    LoginView(
-        viewModel: AppViewModel()
-    ).environment(\.dynamicTypeSize, .medium)
 }
 
 // 성별을 선택하는 첫 온보딩 화면
@@ -101,34 +102,89 @@ struct GenderOnboardingView: View {
     }
 }
 
-// 전화번호를 입력하는 두 번째 온보딩 화면
-struct PhoneOnboardingView: View {
+// 회원가입 정보를 입력하는 두 번째 온보딩 화면
+struct SignupOnboardingView: View {
     @ObservedObject var viewModel: AppViewModel
 
     var body: some View {
         OnboardingScaffold(
-            title: "전화번호",
-            subtitle: "깨끗한 bottleDiary를 유지하고\n중복 가입을 방지하기 위한 것으로,\n절대 공개되지 않습니다."
+            title: "회원가입",
+            subtitle: "선택한 성별을 바탕으로\n회원가입 정보를 입력해주세요."
         ) {
-            VStack(spacing: 24) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("전화번호 입력")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.white)
-                    TextField("", text: $viewModel.phoneNumber, prompt: Text("01012345678").foregroundColor(.white.opacity(0.45)))
-                        .keyboardType(.numberPad)
-                        .foregroundStyle(.white)
-                    Rectangle()
-                        .fill(.white)
-                        .frame(height: 1)
+            VStack(spacing: 18) {
+                if let selectedGender = viewModel.selectedGender {
+                    Text("선택한 성별: \(selectedGender.rawValue)")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color(hex: "#BCE3F1"))
                 }
 
-                Button("인증번호 받기") {
-                    viewModel.completePhoneVerification()
+                SignupInputWithAction(
+                    title: "이메일",
+                    text: $viewModel.signupEmail,
+                    placeholder: "이메일을 입력하세요",
+                    buttonTitle: "중복확인",
+                    keyboardType: .emailAddress,
+                    action: viewModel.checkEmailDuplicate
+                )
+
+                if !viewModel.emailCheckMessage.isEmpty {
+                    inlineMessage(viewModel.emailCheckMessage)
+                }
+
+                LoginInputField(
+                    title: "비밀번호",
+                    text: $viewModel.signupPassword,
+                    placeholder: "비밀번호를 입력하세요",
+                    isSecure: true
+                )
+
+                SignupInputWithAction(
+                    title: "닉네임",
+                    text: $viewModel.signupNickname,
+                    placeholder: "닉네임을 입력하세요",
+                    buttonTitle: "중복확인",
+                    action: viewModel.checkNicknameDuplicate
+                )
+
+                if !viewModel.nicknameCheckMessage.isEmpty {
+                    inlineMessage(viewModel.nicknameCheckMessage)
+                }
+
+                SignupInputWithAction(
+                    title: "전화번호",
+                    text: $viewModel.signupPhoneNumber,
+                    placeholder: "01012345678",
+                    buttonTitle: "인증번호 받기",
+                    keyboardType: .numberPad,
+                    action: viewModel.requestPhoneVerification
+                )
+
+                if !viewModel.phoneCheckMessage.isEmpty {
+                    inlineMessage(viewModel.phoneCheckMessage)
+                }
+
+                Button(viewModel.isSubmittingSignup ? "가입 중..." : "가입하기") {
+                    Task {
+                        await viewModel.submitSignup()
+                    }
                 }
                 .buttonStyle(FilledPrimaryButtonStyle())
+                .disabled(viewModel.isSubmittingSignup)
+
+                if !viewModel.signupMessage.isEmpty {
+                    inlineMessage(viewModel.signupMessage)
+                }
             }
         }
+    }
+
+    // 회원가입 화면 하단 상태 메시지
+    private func inlineMessage(_ message: String) -> some View {
+        Text(message)
+            .font(.system(size: 13, weight: .medium))
+            .multilineTextAlignment(.leading)
+            .foregroundStyle(.white.opacity(0.82))
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -466,6 +522,46 @@ struct LoginInputField: View {
     }
 }
 
+// 회원가입 화면에서 버튼이 함께 있는 입력 필드 컴포넌트
+struct SignupInputWithAction: View {
+    let title: String
+    @Binding var text: String
+    let placeholder: String
+    let buttonTitle: String
+    var keyboardType: UIKeyboardType = .default
+    let action: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.white)
+
+            HStack(alignment: .bottom, spacing: 12) {
+                TextField("", text: $text, prompt: Text(placeholder).foregroundColor(.white.opacity(0.45)))
+                    .keyboardType(keyboardType)
+                    .textInputAutocapitalization(keyboardType == .emailAddress ? .never : .sentences)
+                    .autocorrectionDisabled(keyboardType == .emailAddress)
+                    .foregroundStyle(.white)
+
+                Button(buttonTitle) {
+                    action()
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color(hex: "#BCE3F1"))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.08))
+                .clipShape(Capsule())
+            }
+
+            Rectangle()
+                .fill(.white)
+                .frame(height: 1)
+        }
+    }
+}
+
 // 내 이야기 탭에서 사용하는 일기 카드 컴포넌트
 struct DiaryCardView: View {
     let diary: DiaryEntry
@@ -661,10 +757,13 @@ struct GenderOnboardingView_Previews: PreviewProvider {
     }
 }
 
-// 전화번호 입력 화면 미리보기
-struct PhoneOnboardingView_Previews: PreviewProvider {
+// 회원가입 화면 미리보기
+struct SignupOnboardingView_Previews: PreviewProvider {
     static var previews: some View {
-        PhoneOnboardingView(viewModel: AppViewModel())
+        let viewModel = AppViewModel()
+        viewModel.selectedGender = .female
+        viewModel.onboardingStep = .signup
+        return SignupOnboardingView(viewModel: viewModel)
             .previewDevice("iPhone 16 Pro")
     }
 }
