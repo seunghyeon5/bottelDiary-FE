@@ -8,6 +8,8 @@ struct RootView: View {
     var body: some View {
         Group {
             switch viewModel.onboardingStep {
+            case .login:
+                LoginView(viewModel: viewModel)
             case .gender:
                 GenderOnboardingView(viewModel: viewModel)
             case .phone:
@@ -16,6 +18,7 @@ struct RootView: View {
                 MainHomeView(viewModel: viewModel, isPresentingComposer: $isPresentingComposer)
             }
         }
+        //.dynamicTypeSize(.medium)
         .sheet(isPresented: $isPresentingComposer) {
             DiaryComposerView(viewModel: viewModel)
                 .presentationDetents([.large])
@@ -26,6 +29,58 @@ struct RootView: View {
             }
         }
     }
+}
+
+// 앱 첫 진입 시 보여주는 로그인 화면
+struct LoginView: View {
+    @ObservedObject var viewModel: AppViewModel
+
+    var body: some View {
+        OnboardingScaffold(
+            title: "로그인",
+            subtitle: "bottleDiary에서 오늘의 마음을\n가볍게 기록하고 교환해보세요."
+        ) {
+            VStack(spacing: 18) {
+                VStack(spacing: 14) {
+                    LoginInputField(
+                        title: "아이디",
+                        text: $viewModel.loginId,
+                        placeholder: "아이디를 입력하세요"
+                    )
+
+                    LoginInputField(
+                        title: "비밀번호",
+                        text: $viewModel.loginPassword,
+                        placeholder: "비밀번호를 입력하세요",
+                        isSecure: true
+                    )
+                }
+
+                Button("로그인") {
+                    viewModel.login()
+                }
+                .buttonStyle(FilledPrimaryButtonStyle())
+
+                HStack(spacing: 6) {
+                    Text("처음이신가요?")
+                        .foregroundStyle(.white.opacity(0.7))
+
+                    Button("회원가입") {
+                        viewModel.startSignup()
+                    }
+                    .foregroundStyle(Color(hex: "#BCE3F1"))
+                    .font(.system(size: 15, weight: .semibold))
+                }
+                .font(.system(size: 15, weight: .medium))
+            }
+        }
+    }
+}
+
+#Preview {
+    LoginView(
+        viewModel: AppViewModel()
+    ).environment(\.dynamicTypeSize, .medium)
 }
 
 // 성별을 선택하는 첫 온보딩 화면
@@ -44,13 +99,6 @@ struct GenderOnboardingView: View {
             }
         }
     }
-}
-
-// 성별 선택 화면
-#Preview {
-    GenderOnboardingView(
-        viewModel: AppViewModel()
-    )
 }
 
 // 전화번호를 입력하는 두 번째 온보딩 화면
@@ -83,14 +131,6 @@ struct PhoneOnboardingView: View {
         }
     }
 }
-
-//결과 화면 테스트
-#Preview {
-    PhoneOnboardingView(
-        viewModel: AppViewModel()
-    )
-}
-
 
 // 일기 목록과 교환 목록을 보여주는 메인 홈 화면
 struct MainHomeView: View {
@@ -291,71 +331,55 @@ struct ExchangeResultView: View {
             LinearGradient(colors: [Color(hex: "#05080D"), Color(hex: "#223E66")], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
 
-            VStack(spacing: 28) {
-                HStack {
-                    Image(systemName: "chevron.left")
-                    Spacer()
-                }
-                .foregroundStyle(.white)
+            GeometryReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: proxy.size.height < 700 ? 20 : 28) {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                            Spacer()
+                        }
+                        .foregroundStyle(.white)
 
-                Spacer()
+                        Spacer(minLength: proxy.size.height < 700 ? 20 : 40)
 
-                Text("오늘까지\n\(story.daysRemaining)일째 교환이에요")
-                    .font(.system(size: 34, weight: .bold))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.white)
+                        Text("오늘까지\n\(story.daysRemaining)일째 교환이에요")
+                            .font(.system(size: proxy.size.height < 700 ? 28 : 34, weight: .bold))
+                            .minimumScaleFactor(0.85)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.white)
 
-                Text("“")
-                    .font(.system(size: 50))
-                    .foregroundStyle(.white)
+                        Text("“")
+                            .font(.system(size: proxy.size.height < 700 ? 40 : 50))
+                            .foregroundStyle(.white)
 
-                Text("각자의 마음을 판단없이\n호기심으로 바라보세요.")
-                    .font(.title3.weight(.semibold))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.white.opacity(0.9))
+                        Text("각자의 마음을 판단없이\n호기심으로 바라보세요.")
+                            .font(.system(size: proxy.size.height < 700 ? 20 : 24, weight: .semibold))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.white.opacity(0.9))
 
-                Spacer()
+                        Spacer(minLength: proxy.size.height < 700 ? 24 : 40)
 
-                VStack(spacing: 12) {
-                    Button("교환하기") {
-                        dismiss()
+                        VStack(spacing: 12) {
+                            Button("교환하기") {
+                                dismiss()
+                            }
+                            .buttonStyle(FilledPrimaryButtonStyle())
+
+                            Button("나만 보기") {
+                                dismiss()
+                            }
+                            .buttonStyle(SecondaryFilledButtonStyle())
+                        }
                     }
-                    .buttonStyle(FilledPrimaryButtonStyle())
-
-                    Button("나만 보기") {
-                        dismiss()
-                    }
-                    .buttonStyle(SecondaryFilledButtonStyle())
+                    .frame(minHeight: proxy.size.height - proxy.safeAreaInsets.top - proxy.safeAreaInsets.bottom)
+                    .padding(.horizontal, 24)
+                    .padding(.top, proxy.safeAreaInsets.top + 22)
+                    .padding(.bottom, proxy.safeAreaInsets.bottom + 22)
+                    //.padding(.vertical, 22)
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 22)
         }
     }
-}
-
-//결과 화면 테스트
-#Preview {
-    ExchangeResultView(
-        story: ExchangeStory(
-            partnerName: "익명의 친구",
-            daysRemaining: 3,
-            myEntry: DiaryEntry(
-                dateText: "오늘",
-                title: "나의 하루",
-                content: "오늘 일기를 썼다.",
-                mood: "덤덤"
-            ),
-            partnerEntry: DiaryEntry(
-                dateText: "오늘",
-                title: "상대의 하루",
-                content: "상대방도 조용한 하루를 보냈다.",
-                mood: "덤덤"
-            ),
-            isActive: true
-        ),
-        dismiss: {}
-    )
 }
 
 // 공통 온보딩 배경과 레이아웃을 제공하는 래퍼 화면
@@ -372,22 +396,72 @@ struct OnboardingScaffold<Content: View>: View {
             StarFieldView()
                 .ignoresSafeArea()
 
-            VStack(spacing: 26) {
-                Spacer().frame(height: 68)
-                MoonDecorationView()
-                Text(title)
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(.white)
-                Text(subtitle)
-                    .font(.system(size: 16, weight: .medium))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.white)
-                    .lineSpacing(4)
-                Spacer().frame(height: 46)
-                content
-                Spacer()
+            GeometryReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: proxy.size.height < 700 ? 18 : 26) {
+                        Spacer(minLength: 0)
+                            .frame(height: proxy.size.height < 700 ? 20 : 36)
+
+                        MoonDecorationView()
+                            .scaleEffect(proxy.size.height < 700 ? 0.9 : 1)
+
+                        Text(title)
+                            .font(.system(size: proxy.size.height < 700 ? 24 : 28, weight: .bold))
+                            .minimumScaleFactor(0.85)
+                            .foregroundStyle(.white)
+
+                        Text(subtitle)
+                            .font(.system(size: proxy.size.height < 700 ? 15 : 16, weight: .medium))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.white)
+                            .lineSpacing(4)
+                            .minimumScaleFactor(0.9)
+
+                        Spacer(minLength: 0)
+                            .frame(height: proxy.size.height < 700 ? 20 : 46)
+
+                        content
+
+                        Spacer(minLength: proxy.size.height < 700 ? 24 : 40)
+                    }
+                    .frame(minHeight: proxy.size.height - proxy.safeAreaInsets.top - proxy.safeAreaInsets.bottom)
+                    .padding(.horizontal, 26)
+                    .padding(.top, proxy.safeAreaInsets.top + 12)
+                    .padding(.bottom, proxy.safeAreaInsets.bottom + 24)
+                    //.padding(.vertical, 24)
+                }
             }
-            .padding(.horizontal, 26)
+        }
+    }
+}
+
+// 로그인 화면에서 사용하는 입력 필드 컴포넌트
+struct LoginInputField: View {
+    let title: String
+    @Binding var text: String
+    let placeholder: String
+    var isSecure: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.white)
+
+            Group {
+                if isSecure {
+                    SecureField("", text: $text, prompt: Text(placeholder).foregroundColor(.white.opacity(0.45)))
+                } else {
+                    TextField("", text: $text, prompt: Text(placeholder).foregroundColor(.white.opacity(0.45)))
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                }
+            }
+            .foregroundStyle(.white)
+
+            Rectangle()
+                .fill(.white)
+                .frame(height: 1)
         }
     }
 }
@@ -568,5 +642,56 @@ extension Color {
         let green = Double((value >> 8) & 0xff) / 255
         let blue = Double(value & 0xff) / 255
         self.init(red: red, green: green, blue: blue)
+    }
+}
+
+// 로그인 화면 미리보기
+struct LoginView_Previews: PreviewProvider {
+    static var previews: some View {
+        LoginView(viewModel: AppViewModel())
+            .previewDevice("iPhone 16 Pro")
+    }
+}
+
+// 성별 선택 화면 미리보기
+struct GenderOnboardingView_Previews: PreviewProvider {
+    static var previews: some View {
+        GenderOnboardingView(viewModel: AppViewModel())
+            .previewDevice("iPhone 16 Pro")
+    }
+}
+
+// 전화번호 입력 화면 미리보기
+struct PhoneOnboardingView_Previews: PreviewProvider {
+    static var previews: some View {
+        PhoneOnboardingView(viewModel: AppViewModel())
+            .previewDevice("iPhone 16 Pro")
+    }
+}
+
+// 교환 결과 화면 미리보기
+struct ExchangeResultView_Previews: PreviewProvider {
+    static var previews: some View {
+        ExchangeResultView(
+            story: ExchangeStory(
+                partnerName: "익명의 친구",
+                daysRemaining: 3,
+                myEntry: DiaryEntry(
+                    dateText: "오늘",
+                    title: "나의 하루",
+                    content: "오늘 일기를 썼다.",
+                    mood: "덤덤"
+                ),
+                partnerEntry: DiaryEntry(
+                    dateText: "오늘",
+                    title: "상대의 하루",
+                    content: "상대방도 조용한 하루를 보냈다.",
+                    mood: "덤덤"
+                ),
+                isActive: true
+            ),
+            dismiss: {}
+        )
+        .previewDevice("iPhone 16 Pro")
     }
 }

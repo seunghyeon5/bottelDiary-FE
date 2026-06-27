@@ -2,7 +2,9 @@ import Foundation
 
 // 앱 전체 화면 흐름과 목업 데이터를 관리하는 뷰모델
 final class AppViewModel: ObservableObject {
-    @Published var onboardingStep: OnboardingStep = .gender
+    @Published var onboardingStep: OnboardingStep = .login
+    @Published var loginId = ""
+    @Published var loginPassword = ""
     @Published var selectedGender: GenderOption?
     @Published var phoneNumber = ""
     @Published var selectedTab: BottleDiaryTab = .myStories
@@ -15,6 +17,19 @@ final class AppViewModel: ObservableObject {
     @Published var draftTitle = ""
     @Published var draftContent = ""
     @Published var latestExchange: ExchangeStory?
+
+    // 로그인 입력이 완료되면 메인 화면으로 이동
+    func login() {
+        let trimmedId = loginId.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPassword = loginPassword.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedId.isEmpty, !trimmedPassword.isEmpty else { return }
+        onboardingStep = .completed
+    }
+
+    // 회원가입을 누르면 온보딩 첫 단계로 이동
+    func startSignup() {
+        onboardingStep = .gender
+    }
 
     // 성별 선택 후 전화번호 입력 화면으로 이동
     func selectGender(_ gender: GenderOption) {

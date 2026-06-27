@@ -2,6 +2,7 @@ import Foundation
 
 // 온보딩 진행 단계를 관리하는 상태값
 enum OnboardingStep {
+    case login
     case gender
     case phone
     case completed
