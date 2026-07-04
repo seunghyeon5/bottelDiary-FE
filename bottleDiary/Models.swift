@@ -59,6 +59,53 @@ struct SignupResponse: Codable {
     let phoneNum: String?
 }
 
+// 로그인 요청/응답에 사용하는 API 모델
+struct LoginRequest: Codable {
+    let email: String
+    let password: String
+}
+
+struct UserResponsePayload: Codable {
+    let id: Int?
+    let email: String?
+    let nickname: String?
+    let gender: String?
+    let phoneNum: String?
+}
+
+// 일기 생성 요청/응답에 사용하는 API 모델
+struct DiaryCreateRequest: Codable {
+    let userId: Int
+    let diaryDate: String
+    let title: String
+    let content: String
+    let mood: String?
+}
+
+struct DiaryCreateResponse: Codable {
+    let diary: DiaryResponsePayload?
+    let exchange: DiaryExchangeResponsePayload?
+    let message: String?
+}
+
+struct DiaryResponsePayload: Codable {
+    let id: Int?
+    let userId: Int?
+    let diaryDate: String?
+    let title: String?
+    let content: String?
+    let mood: String?
+    let createdAt: String?
+}
+
+struct DiaryExchangeResponsePayload: Codable {
+    let exchangeId: Int?
+    let exchangeDate: String?
+    let myDiary: DiaryResponsePayload?
+    let partnerDiary: DiaryResponsePayload?
+    let active: Bool?
+}
+
 // 서버 에러 메시지를 받기 위한 공통 API 모델
 struct APIErrorResponse: Codable {
     let status: Int?

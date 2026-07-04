@@ -5,6 +5,7 @@ import Foundation
 final class AppViewModel: ObservableObject {
     private let userAPIService = UserAPIService()
 
+    @Published var currentUserId: Int?
     @Published var onboardingStep: OnboardingStep = .login
     @Published var loginId = ""
     @Published var loginPassword = ""
@@ -18,29 +19,54 @@ final class AppViewModel: ObservableObject {
     @Published var nicknameCheckMessage = ""
     @Published var phoneCheckMessage = ""
     @Published var signupMessage = ""
+    @Published var diarySaveMessage = ""
+    @Published var loginMessage = ""
+    @Published var isSubmittingLogin = false
     @Published var isSubmittingSignup = false
+    @Published var isSubmittingDiary = false
     @Published var selectedTab: BottleDiaryTab = .myStories
-    @Published var diaryEntries: [DiaryEntry] = [
-        DiaryEntry(dateText: "오늘", title: "오늘도 어느 때보다 다정한 하루", content: "조용한 밤 공기와 따뜻한 대화가 오래 남았어요.", mood: "평온"),
-        DiaryEntry(dateText: "어제", title: "작은 용기를 낸 하루", content: "망설이던 연락을 보냈고 생각보다 마음이 편해졌어요.", mood: "설렘"),
-        DiaryEntry(dateText: "1.15 수", title: "퇴근길에 별을 본 날", content: "집으로 오는 길에 밤하늘이 유난히 예뻤어요.", mood: "감사")
-    ]
+    @Published var diaryEntries: [DiaryEntry] = []
     @Published var exchangeStories: [ExchangeStory] = []
     @Published var draftTitle = ""
     @Published var draftContent = ""
     @Published var latestExchange: ExchangeStory?
 
     // 로그인 입력이 완료되면 메인 화면으로 이동
-    func login() {
+    func login() async {
         let trimmedId = loginId.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedPassword = loginPassword.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedId.isEmpty, !trimmedPassword.isEmpty else { return }
-        onboardingStep = .completed
+        loginMessage = ""
+
+        guard isValidEmail(trimmedId) else {
+            loginMessage = "올바른 이메일 형식이 아닙니다."
+            return
+        }
+
+        guard !trimmedPassword.isEmpty else {
+            loginMessage = "비밀번호를 입력해주세요."
+            return
+        }
+
+        isSubmittingLogin = true
+        defer { isSubmittingLogin = false }
+
+        do {
+            let user = try await userAPIService.login(
+                request: LoginRequest(email: trimmedId, password: trimmedPassword)
+            )
+            applyLoggedInUser(user)
+            try await loadDiaryHistory()
+            onboardingStep = .completed
+        } catch {
+            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            loginMessage = message
+        }
     }
 
     // 회원가입을 누르면 온보딩 첫 단계로 이동
     func startSignup() {
         authNoticeMessage = ""
+        signupMessage = ""
         onboardingStep = .gender
     }
 
@@ -50,7 +76,7 @@ final class AppViewModel: ObservableObject {
         onboardingStep = .signup
     }
 
-    // 이메일 형식과 현재 입력 상태를 확인
+    // 이메일 입력 형식과 서버 최종 확인 방식을 안내
     func checkEmailDuplicate() {
         let trimmedEmail = signupEmail.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedEmail.isEmpty else {
@@ -63,7 +89,7 @@ final class AppViewModel: ObservableObject {
             return
         }
 
-        emailCheckMessage = "중복확인 전용 API가 없어 가입 시 서버에서 최종 확인됩니다."
+        emailCheckMessage = "현재 demo 백엔드는 회원가입 시점에 이메일 중복을 최종 확인합니다."
     }
 
     // 닉네임 입력 상태를 확인
@@ -145,13 +171,14 @@ final class AppViewModel: ObservableObject {
             )
 
             loginId = email
-            loginPassword = ""
+            loginPassword = password
             signupEmail = ""
             signupPassword = ""
             signupNickname = ""
             signupPhoneNumber = ""
-            authNoticeMessage = "회원가입이 완료되었습니다. 로그인해주세요."
-            onboardingStep = .login
+            authNoticeMessage = ""
+
+            await login()
         } catch {
             let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             signupMessage = message
@@ -167,27 +194,69 @@ final class AppViewModel: ObservableObject {
     }
 
     // 작성한 일기를 저장하고 조건에 따라 교환 결과를 생성
-    func saveDiary() {
+    func saveDiary() async -> Bool {
         let title = draftTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         let content = draftContent.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty, !content.isEmpty else { return }
+        diarySaveMessage = ""
 
-        let newEntry = DiaryEntry(dateText: formattedToday(), title: title, content: content, mood: "기대")
+        guard !title.isEmpty, !content.isEmpty else {
+            diarySaveMessage = "제목과 내용을 모두 입력해주세요."
+            return false
+        }
+
+        guard let currentUserId else {
+            diarySaveMessage = "회원가입 후 다시 로그인한 사용자 정보가 없어 일기를 저장할 수 없습니다."
+            return false
+        }
+
+        isSubmittingDiary = true
+        defer { isSubmittingDiary = false }
+
+        let response: DiaryCreateResponse
+        do {
+            response = try await userAPIService.createDiary(
+                request: DiaryCreateRequest(
+                    userId: currentUserId,
+                    diaryDate: todayServerDate(),
+                    title: title,
+                    content: content,
+                    mood: "기대"
+                )
+            )
+        } catch {
+            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            diarySaveMessage = message
+            return false
+        }
+
+        let diaryPayload = response.diary
+        let newEntry = DiaryEntry(
+            dateText: formattedToday(from: diaryPayload?.diaryDate),
+            title: diaryPayload?.title ?? title,
+            content: diaryPayload?.content ?? content,
+            mood: diaryPayload?.mood ?? "기대"
+        )
         diaryEntries.insert(newEntry, at: 0)
 
-        if exchangeStories.isEmpty || diaryEntries.count.isMultiple(of: 2) {
-            let partnerEntry = DiaryEntry(
-                dateText: formattedToday(),
-                title: "오늘의 작은 위로",
-                content: "낯선 하루였지만 제 마음을 잘 지켜낸 것 같아요.",
-                mood: "담담"
-            )
+        if let exchangePayload = response.exchange,
+           let myDiary = exchangePayload.myDiary,
+           let partnerDiary = exchangePayload.partnerDiary {
             let exchange = ExchangeStory(
                 partnerName: "별빛님",
                 daysRemaining: 3,
-                myEntry: newEntry,
-                partnerEntry: partnerEntry,
-                isActive: true
+                myEntry: DiaryEntry(
+                    dateText: formattedToday(from: myDiary.diaryDate),
+                    title: myDiary.title ?? newEntry.title,
+                    content: myDiary.content ?? newEntry.content,
+                    mood: myDiary.mood ?? newEntry.mood
+                ),
+                partnerEntry: DiaryEntry(
+                    dateText: formattedToday(from: partnerDiary.diaryDate),
+                    title: partnerDiary.title ?? "상대의 하루",
+                    content: partnerDiary.content ?? "아직 교환된 상대 일기 내용이 없습니다.",
+                    mood: partnerDiary.mood ?? "담담"
+                ),
+                isActive: exchangePayload.active ?? true
             )
             exchangeStories.insert(exchange, at: 0)
             latestExchange = exchange
@@ -196,6 +265,30 @@ final class AppViewModel: ObservableObject {
 
         draftTitle = ""
         draftContent = ""
+        diarySaveMessage = ""
+        return true
+    }
+
+    // 로그인 완료 후 사용자 정보를 화면 상태에 반영
+    private func applyLoggedInUser(_ user: UserResponsePayload) {
+        currentUserId = user.id
+        authNoticeMessage = ""
+        signupMessage = ""
+        loginMessage = ""
+    }
+
+    // 현재 로그인한 사용자의 일기 히스토리를 불러옴
+    private func loadDiaryHistory() async throws {
+        guard let currentUserId else { return }
+        let history = try await userAPIService.fetchDiaryHistory(userId: currentUserId)
+        diaryEntries = history.map { payload in
+            DiaryEntry(
+                dateText: formattedToday(from: payload.diaryDate),
+                title: payload.title ?? "제목 없음",
+                content: payload.content ?? "",
+                mood: payload.mood ?? "기록"
+            )
+        }
     }
 
     // 교환 목록에서 연결을 종료
@@ -204,11 +297,32 @@ final class AppViewModel: ObservableObject {
     }
 
     // 오늘 날짜를 화면용 문자열로 변환
-    private func formattedToday() -> String {
+    private func formattedToday(from serverDate: String? = nil) -> String {
+        if let serverDate,
+           let date = serverDateFormatter.date(from: serverDate) {
+            return displayDateFormatter.string(from: date)
+        }
+
+        return displayDateFormatter.string(from: Date())
+    }
+
+    // 서버 전송용 오늘 날짜 문자열
+    private func todayServerDate() -> String {
+        serverDateFormatter.string(from: Date())
+    }
+
+    private var displayDateFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "M.d E"
-        return formatter.string(from: Date())
+        return formatter
+    }
+
+    private var serverDateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
     }
 
     // 이메일 형식을 간단히 검사

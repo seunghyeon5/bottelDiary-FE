@@ -43,9 +43,9 @@ struct LoginView: View {
             VStack(spacing: 18) {
                 VStack(spacing: 14) {
                     LoginInputField(
-                        title: "아이디",
+                        title: "이메일",
                         text: $viewModel.loginId,
-                        placeholder: "아이디를 입력하세요"
+                        placeholder: "이메일을 입력하세요"
                     )
 
                     LoginInputField(
@@ -56,10 +56,20 @@ struct LoginView: View {
                     )
                 }
 
-                Button("로그인") {
-                    viewModel.login()
+                Button(viewModel.isSubmittingLogin ? "로그인 중..." : "로그인") {
+                    Task {
+                        await viewModel.login()
+                    }
                 }
                 .buttonStyle(FilledPrimaryButtonStyle())
+                .disabled(viewModel.isSubmittingLogin)
+
+                if !viewModel.loginMessage.isEmpty {
+                    Text(viewModel.loginMessage)
+                        .font(.system(size: 14, weight: .medium))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.white.opacity(0.82))
+                }
 
                 if !viewModel.authNoticeMessage.isEmpty {
                     Text(viewModel.authNoticeMessage)
@@ -352,6 +362,12 @@ struct DiaryComposerView: View {
                             .scrollContentBackground(.hidden)
                             .background(Color.clear)
                     }
+
+                    if !viewModel.diarySaveMessage.isEmpty {
+                        Text(viewModel.diarySaveMessage)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.black.opacity(0.65))
+                    }
                 }
                 .padding(20)
             }
@@ -366,11 +382,16 @@ struct DiaryComposerView: View {
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("완료") {
-                        viewModel.saveDiary()
-                        dismiss()
+                    Button(viewModel.isSubmittingDiary ? "저장 중..." : "완료") {
+                        Task {
+                            let didSave = await viewModel.saveDiary()
+                            if didSave {
+                                dismiss()
+                            }
+                        }
                     }
                     .font(.footnote.weight(.semibold))
+                    .disabled(viewModel.isSubmittingDiary)
                 }
             }
         }
