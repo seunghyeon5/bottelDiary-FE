@@ -36,7 +36,6 @@ final class AppViewModel: ObservableObject {
         let trimmedId = loginId.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedPassword = loginPassword.trimmingCharacters(in: .whitespacesAndNewlines)
         loginMessage = ""
-
         guard isValidEmail(trimmedId) else {
             loginMessage = "올바른 이메일 형식이 아닙니다."
             return
@@ -55,6 +54,9 @@ final class AppViewModel: ObservableObject {
                 request: LoginRequest(email: trimmedId, password: trimmedPassword)
             )
             applyLoggedInUser(user)
+            
+            print("applyLoggedInUser 이후 currentUserId:", self.currentUserId as Any)
+            
             try await loadDiaryHistory()
             onboardingStep = .completed
         } catch {
@@ -206,8 +208,12 @@ final class AppViewModel: ObservableObject {
 
         guard let currentUserId else {
             diarySaveMessage = "회원가입 후 다시 로그인한 사용자 정보가 없어 일기를 저장할 수 없습니다."
+            
+            print("현재 접속중인 유저 아이디:", self.currentUserId as Any)
             return false
         }
+        
+        print("현재 접속중인 유저 아이디:", currentUserId)
 
         isSubmittingDiary = true
         defer { isSubmittingDiary = false }
@@ -271,7 +277,14 @@ final class AppViewModel: ObservableObject {
 
     // 로그인 완료 후 사용자 정보를 화면 상태에 반영
     private func applyLoggedInUser(_ user: UserResponsePayload) {
+        
+        print("applyLoggedInUser user:", user)
+        print("user.id:", user.id as Any)
+
         currentUserId = user.id
+
+        print("저장 후 currentUserId:", currentUserId as Any)
+        
         authNoticeMessage = ""
         signupMessage = ""
         loginMessage = ""

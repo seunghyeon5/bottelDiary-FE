@@ -32,13 +32,39 @@ struct UserAPIService {
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.httpBody = try JSONEncoder().encode(request)
+        
+        print("===== 로그인 요청 =====")
+        print("URL:", urlRequest.url?.absoluteString ?? "nil")
+        print("Method:", urlRequest.httpMethod ?? "nil")
+        print("Headers:", urlRequest.allHTTPHeaderFields ?? [:])
+
+        if let body = urlRequest.httpBody,
+           let bodyString = String(data: body, encoding: .utf8) {
+            print("Request Body:", bodyString)
+        }
 
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        
+        print("===== 로그인 응답 =====")
+        
         guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
 
+        print("Status Code:", httpResponse.statusCode)
+        print("Response Headers:", httpResponse.allHeaderFields)
+
+        if let authorization = httpResponse.value(forHTTPHeaderField: "Authorization") {
+            print("Authorization Header:", authorization)
+        }
+
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("Response Body:", responseString)
+        }
+        
         if (200...299).contains(httpResponse.statusCode) {
+            let decoded = try JSONDecoder().decode(UserResponsePayload.self, from: data)
+            print("Decoded UserResponsePayload:", decoded)
             return try JSONDecoder().decode(UserResponsePayload.self, from: data)
         }
 
