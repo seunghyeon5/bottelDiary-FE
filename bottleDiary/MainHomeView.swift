@@ -82,6 +82,27 @@ struct MainHomeView: View {
         case .myStories:
             ScrollView {
                 VStack(spacing: 14) {
+                    if !viewModel.diaryHistoryMessage.isEmpty {
+                        Text(viewModel.diaryHistoryMessage)
+                            .font(.footnote)
+                            .foregroundStyle(Color(hex: "#FFD7D7"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 4)
+                    }
+
+                    if viewModel.diaryEntries.isEmpty {
+                        VStack(spacing: 10) {
+                            Text("아직 작성한 일기가 없습니다.")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                            Text("아래 버튼으로 오늘의 이야기를\n가볍게 남겨보세요.")
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(.white.opacity(0.72))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 56)
+                    }
+
                     ForEach(viewModel.diaryEntries) { diary in
                         DiaryCardView(diary: diary)
                     }

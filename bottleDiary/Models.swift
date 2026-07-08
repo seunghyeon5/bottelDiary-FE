@@ -66,6 +66,8 @@ struct LoginRequest: Codable {
 }
 
 struct UserResponsePayload: Codable {
+    let tokenType: String?
+    let token: String?
     let id: Int?
     let email: String?
     let nickname: String?

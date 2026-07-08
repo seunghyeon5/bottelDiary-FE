@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class AppViewModel: ObservableObject {
     private let userAPIService = UserAPIService()
+    private let authSessionStore = AuthSessionStore.shared
 
     @Published var currentUserId: Int?
     @Published var onboardingStep: OnboardingStep = .login
@@ -21,6 +22,7 @@ final class AppViewModel: ObservableObject {
     @Published var signupMessage = ""
     @Published var diarySaveMessage = ""
     @Published var loginMessage = ""
+    @Published var diaryHistoryMessage = ""
     @Published var isSubmittingLogin = false
     @Published var isSubmittingSignup = false
     @Published var isSubmittingDiary = false
@@ -30,12 +32,16 @@ final class AppViewModel: ObservableObject {
     @Published var draftTitle = ""
     @Published var draftContent = ""
     @Published var latestExchange: ExchangeStory?
+    @Published var authToken: String?
 
     // 로그인 입력이 완료되면 메인 화면으로 이동
     func login() async {
         let trimmedId = loginId.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedPassword = loginPassword.trimmingCharacters(in: .whitespacesAndNewlines)
         loginMessage = ""
+        diaryHistoryMessage = ""
+        authToken = nil
+        authSessionStore.clear()
         guard isValidEmail(trimmedId) else {
             loginMessage = "올바른 이메일 형식이 아닙니다."
             return
@@ -54,12 +60,17 @@ final class AppViewModel: ObservableObject {
                 request: LoginRequest(email: trimmedId, password: trimmedPassword)
             )
             applyLoggedInUser(user)
-            
-            print("applyLoggedInUser 이후 currentUserId:", self.currentUserId as Any)
-            
-            try await loadDiaryHistory()
             onboardingStep = .completed
+
+            do {
+                try await loadDiaryHistory()
+            } catch {
+                diaryEntries = []
+                diaryHistoryMessage = "일기 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+            }
         } catch {
+            authToken = nil
+            authSessionStore.clear()
             let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             loginMessage = message
         }
@@ -208,17 +219,14 @@ final class AppViewModel: ObservableObject {
 
         guard let currentUserId else {
             diarySaveMessage = "회원가입 후 다시 로그인한 사용자 정보가 없어 일기를 저장할 수 없습니다."
-            
-            print("현재 접속중인 유저 아이디:", self.currentUserId as Any)
             return false
         }
-        
-        print("현재 접속중인 유저 아이디:", currentUserId)
 
         isSubmittingDiary = true
         defer { isSubmittingDiary = false }
 
         let response: DiaryCreateResponse
+        
         do {
             response = try await userAPIService.createDiary(
                 request: DiaryCreateRequest(
@@ -277,17 +285,12 @@ final class AppViewModel: ObservableObject {
 
     // 로그인 완료 후 사용자 정보를 화면 상태에 반영
     private func applyLoggedInUser(_ user: UserResponsePayload) {
-        
-        print("applyLoggedInUser user:", user)
-        print("user.id:", user.id as Any)
-
         currentUserId = user.id
-
-        print("저장 후 currentUserId:", currentUserId as Any)
-        
+        authToken = authSessionStore.authorizationHeaderValue
         authNoticeMessage = ""
         signupMessage = ""
         loginMessage = ""
+        diaryHistoryMessage = ""
     }
 
     // 현재 로그인한 사용자의 일기 히스토리를 불러옴
@@ -302,6 +305,7 @@ final class AppViewModel: ObservableObject {
                 mood: payload.mood ?? "기록"
             )
         }
+        diaryHistoryMessage = ""
     }
 
     // 교환 목록에서 연결을 종료
