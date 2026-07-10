@@ -4,6 +4,7 @@ import SwiftUI
 struct MainHomeView: View {
     @ObservedObject var viewModel: AppViewModel
     @Binding var isPresentingComposer: Bool
+    @State private var selectedDiary: DiaryEntry?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -28,6 +29,10 @@ struct MainHomeView: View {
                     .shadow(color: .black.opacity(0.25), radius: 12, y: 8)
             }
             .padding(.bottom, 28)
+        }
+        .sheet(item: $selectedDiary) { diary in
+            DiaryDetailView(diary: diary)
+                .presentationDetents([.large])
         }
     }
 
@@ -104,7 +109,12 @@ struct MainHomeView: View {
                     }
 
                     ForEach(viewModel.diaryEntries) { diary in
-                        DiaryCardView(diary: diary)
+                        Button {
+                            selectedDiary = diary
+                        } label: {
+                            DiaryCardView(diary: diary)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 16)
