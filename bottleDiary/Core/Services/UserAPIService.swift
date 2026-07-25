@@ -5,6 +5,56 @@ struct UserAPIService {
     private let baseURL = URL(string: "http://localhost:8080")!
     private let authSessionStore = AuthSessionStore.shared
 
+    // 이메일 중복확인 요청을 서버로 전송
+    func checkEmailDuplicate(email: String) async throws -> UserDuplicateCheckResponse {
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("api/users/exist-email"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [URLQueryItem(name: "email", value: email)]
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        if (200...299).contains(httpResponse.statusCode) {
+            return try JSONDecoder().decode(UserDuplicateCheckResponse.self, from: data)
+        }
+
+        let message = decodeErrorMessage(from: data, fallback: "이메일 중복 확인에 실패했습니다.")
+        throw SignupServiceError.server(message: message, statusCode: httpResponse.statusCode)
+    }
+
+    // 닉네임 중복확인 요청을 서버로 전송
+    func checkNicknameDuplicate(nickname: String) async throws -> UserDuplicateCheckResponse {
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("api/users/exist-nickname"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [URLQueryItem(name: "nickname", value: nickname)]
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        if (200...299).contains(httpResponse.statusCode) {
+            return try JSONDecoder().decode(UserDuplicateCheckResponse.self, from: data)
+        }
+
+        let message = decodeErrorMessage(from: data, fallback: "닉네임 중복 확인에 실패했습니다.")
+        throw SignupServiceError.server(message: message, statusCode: httpResponse.statusCode)
+    }
+
     // 회원가입 요청을 서버로 전송
     func signup(request: SignupRequest) async throws -> SignupResponse {
         let url = baseURL.appendingPathComponent("api/users/signup")

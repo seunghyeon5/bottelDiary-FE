@@ -59,6 +59,34 @@ struct SignupResponse: Codable {
     let phoneNum: String?
 }
 
+// 이메일/닉네임 중복 확인에 사용하는 API 응답 모델
+struct UserDuplicateCheckResponse: Codable {
+    let duplicate: Bool?
+    let exists: Bool?
+    let exist: Bool?
+    let isDuplicateValue: Bool?
+    let available: Bool?
+    let message: String?
+
+    var isDuplicate: Bool {
+        if let duplicate { return duplicate }
+        if let exists { return exists }
+        if let exist { return exist }
+        if let isDuplicateValue { return isDuplicateValue }
+        if let available { return !available }
+        return false
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case duplicate
+        case exists
+        case exist
+        case isDuplicateValue = "isDuplicate"
+        case available
+        case message
+    }
+}
+
 // 로그인 요청/응답에 사용하는 API 모델
 struct LoginRequest: Codable {
     let email: String

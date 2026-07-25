@@ -22,7 +22,11 @@ struct SignupOnboardingView: View {
                     placeholder: "이메일을 입력하세요",
                     buttonTitle: "중복확인",
                     keyboardType: .emailAddress,
-                    action: viewModel.checkEmailDuplicate
+                    action: {
+                        Task {
+                            await viewModel.checkEmailDuplicate()
+                        }
+                    }
                 )
 
                 if !viewModel.emailCheckMessage.isEmpty {
@@ -41,7 +45,11 @@ struct SignupOnboardingView: View {
                     text: $viewModel.signupNickname,
                     placeholder: "닉네임을 입력하세요",
                     buttonTitle: "중복확인",
-                    action: viewModel.checkNicknameDuplicate
+                    action: {
+                        Task {
+                            await viewModel.checkNicknameDuplicate()
+                        }
+                    }
                 )
 
                 if !viewModel.nicknameCheckMessage.isEmpty {

@@ -90,8 +90,10 @@ final class AppViewModel: ObservableObject {
     }
 
     // 이메일 입력 형식과 서버 최종 확인 방식을 안내
-    func checkEmailDuplicate() {
+    func checkEmailDuplicate() async {
         let trimmedEmail = signupEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        emailCheckMessage = ""
+
         guard !trimmedEmail.isEmpty else {
             emailCheckMessage = "이메일을 입력해주세요."
             return
@@ -102,12 +104,24 @@ final class AppViewModel: ObservableObject {
             return
         }
 
-        emailCheckMessage = "현재 demo 백엔드는 회원가입 시점에 이메일 중복을 최종 확인합니다."
+        do {
+            let response = try await userAPIService.checkEmailDuplicate(email: trimmedEmail)
+            if response.isDuplicate {
+                emailCheckMessage = response.message ?? "중복된 이메일입니다."
+            } else {
+                emailCheckMessage = response.message ?? "사용 가능한 이메일입니다."
+            }
+        } catch {
+            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            emailCheckMessage = message
+        }
     }
 
     // 닉네임 입력 상태를 확인
-    func checkNicknameDuplicate() {
+    func checkNicknameDuplicate() async {
         let trimmedNickname = signupNickname.trimmingCharacters(in: .whitespacesAndNewlines)
+        nicknameCheckMessage = ""
+
         guard !trimmedNickname.isEmpty else {
             nicknameCheckMessage = "닉네임을 입력해주세요."
             return
@@ -118,7 +132,17 @@ final class AppViewModel: ObservableObject {
             return
         }
 
-        nicknameCheckMessage = "닉네임 중복확인 API가 없어 가입 시 함께 확인해야 합니다."
+        do {
+            let response = try await userAPIService.checkNicknameDuplicate(nickname: trimmedNickname)
+            if response.isDuplicate {
+                nicknameCheckMessage = response.message ?? "중복된 닉네임입니다."
+            } else {
+                nicknameCheckMessage = response.message ?? "사용 가능한 닉네임입니다."
+            }
+        } catch {
+            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            nicknameCheckMessage = message
+        }
     }
 
     // 전화번호 형식만 우선 확인하고 인증 API 연결 여부를 안내
