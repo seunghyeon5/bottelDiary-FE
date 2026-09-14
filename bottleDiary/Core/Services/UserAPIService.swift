@@ -2,7 +2,8 @@ import Foundation
 
 // 회원가입 API 통신을 담당하는 서비스
 struct UserAPIService {
-    private let baseURL = URL(string: "http://localhost:8080")!
+    // xcconfig에서 Info.plist로 주입된 서버 주소를 읽어 API 기본 주소로 사용
+    private let baseURL = URL(string: Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String ?? "")!
     private let authSessionStore = AuthSessionStore.shared
 
     // 이메일 중복확인 요청을 서버로 전송

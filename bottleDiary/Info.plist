@@ -2,9 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Config.xcconfig의 API_BASE_URL 값을 앱 번들에 주입 -->
+	<key>API_BASE_URL</key>
+	<string>$(API_BASE_URL)</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<key>NSAllowsLocalNetworking</key>
+		<!-- 현재 외부 개발 서버가 HTTP라서 필요한 임시 설정입니다. HTTPS 적용 후 제거하세요. -->
+		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
 	<key>UIRequiresFullScreen</key>

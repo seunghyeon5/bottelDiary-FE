@@ -24,6 +24,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		9F4D2A010000000000000001 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		9F4D2A010000000000000002 /* Config.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.example.xcconfig; sourceTree = "<group>"; };
 		647A2CE22D44CA47002FAA54 /* bottleDiary.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = bottleDiary.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		647A2CF82D44CA48002FAA54 /* bottleDiaryTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = bottleDiaryTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		647A2D022D44CA48002FAA54 /* bottleDiaryUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = bottleDiaryUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -88,6 +90,8 @@
 		647A2CD92D44CA47002FAA54 = {
 			isa = PBXGroup;
 			children = (
+				9F4D2A010000000000000001 /* Config.xcconfig */,
+				9F4D2A010000000000000002 /* Config.example.xcconfig */,
 				647A2CE42D44CA47002FAA54 /* bottleDiary */,
 				647A2CFB2D44CA48002FAA54 /* bottleDiaryTests */,
 				647A2D052D44CA48002FAA54 /* bottleDiaryUITests */,
@@ -284,6 +288,7 @@
 /* Begin XCBuildConfiguration section */
 		647A2D0C2D44CA48002FAA54 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9F4D2A010000000000000001 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -310,6 +315,7 @@
 		};
 		647A2D0D2D44CA48002FAA54 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9F4D2A010000000000000001 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
