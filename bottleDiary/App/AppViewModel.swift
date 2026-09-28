@@ -269,6 +269,7 @@ final class AppViewModel: ObservableObject {
 
         let diaryPayload = response.diary
         let newEntry = DiaryEntry(
+            serverId: diaryPayload?.id,
             dateText: formattedToday(from: diaryPayload?.diaryDate),
             title: diaryPayload?.title ?? title,
             content: diaryPayload?.content ?? content,
@@ -283,12 +284,14 @@ final class AppViewModel: ObservableObject {
                 partnerName: "별빛님",
                 daysRemaining: 3,
                 myEntry: DiaryEntry(
+                    serverId: myDiary.id,
                     dateText: formattedToday(from: myDiary.diaryDate),
                     title: myDiary.title ?? newEntry.title,
                     content: myDiary.content ?? newEntry.content,
                     mood: myDiary.mood ?? newEntry.mood
                 ),
                 partnerEntry: DiaryEntry(
+                    serverId: partnerDiary.id,
                     dateText: formattedToday(from: partnerDiary.diaryDate),
                     title: partnerDiary.title ?? "상대의 하루",
                     content: partnerDiary.content ?? "아직 교환된 상대 일기 내용이 없습니다.",
@@ -323,6 +326,7 @@ final class AppViewModel: ObservableObject {
         let history = try await userAPIService.fetchDiaryHistory(userId: currentUserId)
         diaryEntries = history.map { payload in
             DiaryEntry(
+                serverId: payload.id,
                 dateText: formattedToday(from: payload.diaryDate),
                 title: payload.title ?? "제목 없음",
                 content: payload.content ?? "",
@@ -330,6 +334,65 @@ final class AppViewModel: ObservableObject {
             )
         }
         diaryHistoryMessage = ""
+    }
+
+    // 선택한 일기를 수정하고 목록의 해당 항목도 즉시 갱신
+    func updateDiary(_ diary: DiaryEntry, title: String, content: String) async -> DiaryEntry? {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedTitle.isEmpty, !trimmedContent.isEmpty else {
+            diarySaveMessage = "제목과 내용을 모두 입력해주세요."
+            return nil
+        }
+
+        guard let serverId = diary.serverId else {
+            diarySaveMessage = "서버 일기 ID가 없어 수정할 수 없습니다."
+            return nil
+        }
+
+        do {
+            let response = try await userAPIService.updateDiary(
+                diaryId: serverId,
+                request: DiaryUpdateRequest(title: trimmedTitle, content: trimmedContent, mood: diary.mood)
+            )
+            let updatedDiary = DiaryEntry(
+                serverId: response?.id ?? diary.serverId,
+                dateText: response?.diaryDate.map { formattedToday(from: $0) } ?? diary.dateText,
+                title: response?.title ?? trimmedTitle,
+                content: response?.content ?? trimmedContent,
+                mood: response?.mood ?? diary.mood
+            )
+            replaceDiary(updatedDiary, matching: diary)
+            diarySaveMessage = ""
+            return updatedDiary
+        } catch {
+            diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            return nil
+        }
+    }
+
+    // 선택한 일기를 삭제하고 목록에서 제거
+    func deleteDiary(_ diary: DiaryEntry) async -> Bool {
+        guard let serverId = diary.serverId else {
+            diarySaveMessage = "서버 일기 ID가 없어 삭제할 수 없습니다."
+            return false
+        }
+
+        do {
+            try await userAPIService.deleteDiary(diaryId: serverId)
+            diaryEntries.removeAll { $0.id == diary.id }
+            diarySaveMessage = ""
+            return true
+        } catch {
+            diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            return false
+        }
+    }
+
+    private func replaceDiary(_ updatedDiary: DiaryEntry, matching diary: DiaryEntry) {
+        guard let index = diaryEntries.firstIndex(where: { $0.id == diary.id }) else { return }
+        diaryEntries[index] = updatedDiary
     }
 
     // 교환 목록에서 연결을 종료

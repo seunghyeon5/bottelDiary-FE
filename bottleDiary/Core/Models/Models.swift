@@ -25,10 +25,19 @@ enum GenderOption: String, CaseIterable, Identifiable {
 // 사용자가 작성한 일기 한 건을 나타내는 모델
 struct DiaryEntry: Identifiable {
     let id = UUID()
+    let serverId: Int?
     let dateText: String
     let title: String
     let content: String
     let mood: String
+
+    init(serverId: Int? = nil, dateText: String, title: String, content: String, mood: String) {
+        self.serverId = serverId
+        self.dateText = dateText
+        self.title = title
+        self.content = content
+        self.mood = mood
+    }
 }
 
 // 나와 상대방의 일기 교환 정보를 담는 모델
@@ -107,6 +116,13 @@ struct UserResponsePayload: Codable {
 struct DiaryCreateRequest: Codable {
     let userId: Int
     let diaryDate: String
+    let title: String
+    let content: String
+    let mood: String?
+}
+
+// 일기 수정 요청에 사용하는 API 모델
+struct DiaryUpdateRequest: Codable {
     let title: String
     let content: String
     let mood: String?

@@ -143,6 +143,45 @@ struct UserAPIService {
         throw SignupServiceError.server(message: message, statusCode: httpResponse.statusCode)
     }
 
+    // 기존 일기의 제목과 내용을 서버에서 수정
+    func updateDiary(diaryId: Int, request: DiaryUpdateRequest) async throws -> DiaryResponsePayload? {
+        let url = baseURL.appendingPathComponent("api/diaries/\(diaryId)")
+        var urlRequest = authorizedRequest(url: url, method: "PUT")
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.httpBody = try JSONEncoder().encode(request)
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        if (200...299).contains(httpResponse.statusCode) {
+            guard !data.isEmpty else { return nil }
+            if let payload = try? JSONDecoder().decode(DiaryResponsePayload.self, from: data) {
+                return payload
+            }
+            return try JSONDecoder().decode(DiaryCreateResponse.self, from: data).diary
+        }
+
+        let message = decodeErrorMessage(from: data, fallback: "일기 수정 요청에 실패했습니다.")
+        throw SignupServiceError.server(message: message, statusCode: httpResponse.statusCode)
+    }
+
+    // 기존 일기를 서버에서 삭제
+    func deleteDiary(diaryId: Int) async throws {
+        let url = baseURL.appendingPathComponent("api/diaries/\(diaryId)")
+        let urlRequest = authorizedRequest(url: url, method: "DELETE")
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let message = decodeErrorMessage(from: data, fallback: "일기 삭제 요청에 실패했습니다.")
+            throw SignupServiceError.server(message: message, statusCode: httpResponse.statusCode)
+        }
+    }
+
     private func decodeErrorMessage(from data: Data, fallback: String) -> String {
         let apiError = try? JSONDecoder().decode(APIErrorResponse.self, from: data)
         return apiError?.message ?? fallback

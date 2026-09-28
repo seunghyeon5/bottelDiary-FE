@@ -31,7 +31,7 @@ struct MainHomeView: View {
             .padding(.bottom, 28)
         }
         .sheet(item: $selectedDiary) { diary in
-            DiaryDetailView(diary: diary)
+            DiaryDetailView(diary: diary, viewModel: viewModel)
                 .presentationDetents([.large])
         }
     }
