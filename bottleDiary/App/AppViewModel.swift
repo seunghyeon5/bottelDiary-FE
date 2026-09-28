@@ -351,9 +351,15 @@ final class AppViewModel: ObservableObject {
             return nil
         }
 
+        guard let currentUserId else {
+            diarySaveMessage = "로그인한 사용자 정보가 없어 수정할 수 없습니다."
+            return nil
+        }
+
         do {
             let response = try await userAPIService.updateDiary(
                 diaryId: serverId,
+                userId: currentUserId,
                 request: DiaryUpdateRequest(title: trimmedTitle, content: trimmedContent, mood: diary.mood)
             )
             let updatedDiary = DiaryEntry(
@@ -379,8 +385,13 @@ final class AppViewModel: ObservableObject {
             return false
         }
 
+        guard let currentUserId else {
+            diarySaveMessage = "로그인한 사용자 정보가 없어 삭제할 수 없습니다."
+            return false
+        }
+
         do {
-            try await userAPIService.deleteDiary(diaryId: serverId)
+            try await userAPIService.deleteDiary(diaryId: serverId, userId: currentUserId)
             diaryEntries.removeAll { $0.id == diary.id }
             diarySaveMessage = ""
             return true
