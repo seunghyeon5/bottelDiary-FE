@@ -127,8 +127,8 @@ struct UserAPIService {
     }
 
     // 사용자의 일기 히스토리를 서버에서 조회
-    func fetchDiaryHistory(userId: Int) async throws -> [DiaryResponsePayload] {
-        let url = baseURL.appendingPathComponent("api/diaries/users/\(userId)/history")
+    func fetchDiaryHistory() async throws -> [DiaryResponsePayload] {
+        let url = baseURL.appendingPathComponent("api/diaries/history")
         let urlRequest = authorizedRequest(url: url, method: "GET")
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -144,8 +144,8 @@ struct UserAPIService {
     }
 
     // 기존 일기의 제목과 내용을 서버에서 수정
-    func updateDiary(diaryId: Int, userId: Int, request: DiaryUpdateRequest) async throws -> DiaryResponsePayload? {
-        let url = diaryActionURL(diaryId: diaryId, userId: userId)
+    func updateDiary(diaryId: Int, request: DiaryUpdateRequest) async throws -> DiaryResponsePayload? {
+        let url = baseURL.appendingPathComponent("api/diaries/\(diaryId)")
         var urlRequest = authorizedRequest(url: url, method: "PUT")
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.httpBody = try JSONEncoder().encode(request)
@@ -168,8 +168,8 @@ struct UserAPIService {
     }
 
     // 기존 일기를 서버에서 삭제
-    func deleteDiary(diaryId: Int, userId: Int) async throws {
-        let url = diaryActionURL(diaryId: diaryId, userId: userId)
+    func deleteDiary(diaryId: Int) async throws {
+        let url = baseURL.appendingPathComponent("api/diaries/\(diaryId)")
         let urlRequest = authorizedRequest(url: url, method: "DELETE")
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -180,16 +180,6 @@ struct UserAPIService {
             let message = decodeErrorMessage(from: data, fallback: "일기 삭제 요청에 실패했습니다.")
             throw SignupServiceError.server(message: message, statusCode: httpResponse.statusCode)
         }
-    }
-
-    // 일기 수정/삭제 API가 요구하는 userId 쿼리 파라미터를 공통으로 생성
-    private func diaryActionURL(diaryId: Int, userId: Int) -> URL {
-        var components = URLComponents(
-            url: baseURL.appendingPathComponent("api/diaries/\(diaryId)"),
-            resolvingAgainstBaseURL: false
-        )
-        components?.queryItems = [URLQueryItem(name: "userId", value: String(userId))]
-        return components?.url ?? baseURL.appendingPathComponent("api/diaries/\(diaryId)")
     }
 
     private func decodeErrorMessage(from data: Data, fallback: String) -> String {

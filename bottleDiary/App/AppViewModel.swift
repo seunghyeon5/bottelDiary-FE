@@ -241,11 +241,6 @@ final class AppViewModel: ObservableObject {
             return false
         }
 
-        guard let currentUserId else {
-            diarySaveMessage = "회원가입 후 다시 로그인한 사용자 정보가 없어 일기를 저장할 수 없습니다."
-            return false
-        }
-
         isSubmittingDiary = true
         defer { isSubmittingDiary = false }
 
@@ -254,7 +249,6 @@ final class AppViewModel: ObservableObject {
         do {
             response = try await userAPIService.createDiary(
                 request: DiaryCreateRequest(
-                    userId: currentUserId,
                     diaryDate: todayServerDate(),
                     title: title,
                     content: content,
@@ -322,8 +316,7 @@ final class AppViewModel: ObservableObject {
 
     // 현재 로그인한 사용자의 일기 히스토리를 불러옴
     private func loadDiaryHistory() async throws {
-        guard let currentUserId else { return }
-        let history = try await userAPIService.fetchDiaryHistory(userId: currentUserId)
+        let history = try await userAPIService.fetchDiaryHistory()
         diaryEntries = history.map { payload in
             DiaryEntry(
                 serverId: payload.id,
@@ -351,15 +344,9 @@ final class AppViewModel: ObservableObject {
             return nil
         }
 
-        guard let currentUserId else {
-            diarySaveMessage = "로그인한 사용자 정보가 없어 수정할 수 없습니다."
-            return nil
-        }
-
         do {
             let response = try await userAPIService.updateDiary(
                 diaryId: serverId,
-                userId: currentUserId,
                 request: DiaryUpdateRequest(title: trimmedTitle, content: trimmedContent, mood: diary.mood)
             )
             let updatedDiary = DiaryEntry(
@@ -385,13 +372,8 @@ final class AppViewModel: ObservableObject {
             return false
         }
 
-        guard let currentUserId else {
-            diarySaveMessage = "로그인한 사용자 정보가 없어 삭제할 수 없습니다."
-            return false
-        }
-
         do {
-            try await userAPIService.deleteDiary(diaryId: serverId, userId: currentUserId)
+            try await userAPIService.deleteDiary(diaryId: serverId)
             diaryEntries.removeAll { $0.id == diary.id }
             diarySaveMessage = ""
             return true

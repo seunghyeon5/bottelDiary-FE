@@ -114,7 +114,6 @@ struct UserResponsePayload: Codable {
 
 // 일기 생성 요청/응답에 사용하는 API 모델
 struct DiaryCreateRequest: Codable {
-    let userId: Int
     let diaryDate: String
     let title: String
     let content: String
