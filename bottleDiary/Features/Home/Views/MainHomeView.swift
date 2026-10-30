@@ -8,6 +8,8 @@ struct MainHomeView: View {
     @State private var isShowingProfile = false
     @State private var isShowingNotifications = false
     @State private var isShowingDiaryFilters = false
+    @State private var isShowingRecoveryList = false
+    @State private var selectedRecovery: DeletedDiaryRecovery?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -57,6 +59,15 @@ struct MainHomeView: View {
         }
         .sheet(isPresented: $isShowingDiaryFilters) {
             DiaryFilterView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $isShowingRecoveryList) {
+            DeletedDiaryListView(viewModel: viewModel) { recovery in
+                selectedRecovery = recovery
+            }
+        }
+        .sheet(item: $selectedRecovery) { recovery in
+            DiaryDetailView(diary: recovery.diary, viewModel: viewModel, isRecoveryMode: true, recovery: recovery)
+                .presentationDetents([.large])
         }
     }
 
@@ -146,26 +157,23 @@ struct MainHomeView: View {
                         .padding(.horizontal, 4)
                     }
 
-                    if let deletedDiary = viewModel.lastDeletedDiary {
-                        HStack(spacing: 12) {
-                            Text("최근 일기를 삭제했습니다.")
-                                .font(.footnote)
-                                .foregroundStyle(.white)
-                            Spacer()
-                            Button("복구") {
-                                Task { _ = await viewModel.restoreLastDeletedDiary() }
+                    if !viewModel.recoverableDiaries.isEmpty {
+                        Button {
+                            viewModel.removeExpiredRecoveries()
+                            isShowingRecoveryList = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.uturn.backward.circle")
+                                Text("삭제된 일기 복구 (\(viewModel.recoverableDiaries.count))")
+                                Spacer()
+                                Image(systemName: "chevron.right")
                             }
-                            .font(.footnote.weight(.bold))
-                            .foregroundStyle(Color(hex: "#1E4267"))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 7)
-                            .background(Color.white)
-                            .clipShape(Capsule())
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(12)
+                            .background(Color.black.opacity(0.22))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
-                        .padding(12)
-                        .background(Color.black.opacity(0.22))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .accessibilityLabel("\(deletedDiary.title) 일기 복구")
                     }
 
                     if viewModel.diaryEntries.isEmpty {

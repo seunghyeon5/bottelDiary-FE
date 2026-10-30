@@ -4,16 +4,21 @@ import SwiftUI
 struct DiaryDetailView: View {
     let diary: DiaryEntry
     @ObservedObject var viewModel: AppViewModel
+    let isRecoveryMode: Bool
+    let recovery: DeletedDiaryRecovery?
     @Environment(\.dismiss) private var dismiss
     @State private var displayedDiary: DiaryEntry
     @State private var isShowingEditor = false
     @State private var isShowingDeleteDialog = false
     @State private var isSubmittingDelete = false
+    @State private var isSubmittingRecovery = false
     @State private var actionMessage = ""
 
-    init(diary: DiaryEntry, viewModel: AppViewModel) {
+    init(diary: DiaryEntry, viewModel: AppViewModel, isRecoveryMode: Bool = false, recovery: DeletedDiaryRecovery? = nil) {
         self.diary = diary
         self.viewModel = viewModel
+        self.isRecoveryMode = isRecoveryMode
+        self.recovery = recovery
         _displayedDiary = State(initialValue: diary)
     }
 
@@ -85,7 +90,7 @@ struct DiaryDetailView: View {
                 }
             }
             .task {
-                if let latestDiary = await viewModel.loadDiaryDetail(displayedDiary) {
+                if !isRecoveryMode, let latestDiary = await viewModel.loadDiaryDetail(displayedDiary) {
                     displayedDiary = latestDiary
                 }
             }
@@ -95,14 +100,35 @@ struct DiaryDetailView: View {
                 }
                 Button("취소", role: .cancel) { }
             } message: {
-                Text("삭제한 일기는 다시 복구할 수 없습니다.")
+                Text("삭제한 일기는 복구 목록에 저장되며 24시간 동안 보관됩니다.")
             }
         }
     }
 
     // 상세 화면 하단의 수정/삭제 액션 버튼 영역
     private var actionBar: some View {
-        HStack(spacing: 12) {
+        Group {
+            if isRecoveryMode {
+                Button {
+                    restoreDiary()
+                } label: {
+                    Group {
+                        if isSubmittingRecovery {
+                            ProgressView().tint(.white)
+                        } else {
+                            Text("이 일기 복구하기")
+                        }
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color(hex: "#25476D"))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .disabled(isSubmittingRecovery)
+            } else {
+                HStack(spacing: 12) {
             Button {
                 actionMessage = ""
                 isShowingEditor = true
@@ -134,6 +160,8 @@ struct DiaryDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .disabled(isSubmittingDelete)
+                }
+            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
@@ -152,6 +180,25 @@ struct DiaryDetailView: View {
                     dismiss()
                 } else {
                     actionMessage = viewModel.diarySaveMessage
+                }
+            }
+        }
+    }
+
+    // 복구 API 성공 후에만 상세 화면을 닫고 활성 목록을 반영
+    private func restoreDiary() {
+        guard let recovery else { return }
+        isSubmittingRecovery = true
+        Task {
+            let success = await viewModel.restoreDiary(recovery)
+            await MainActor.run {
+                isSubmittingRecovery = false
+                if success {
+                    dismiss()
+                } else {
+                    actionMessage = viewModel.diaryHistoryMessage.isEmpty
+                        ? viewModel.diarySaveMessage
+                        : viewModel.diaryHistoryMessage
                 }
             }
         }

@@ -40,6 +40,39 @@ struct DiaryEntry: Identifiable {
     }
 }
 
+// 삭제 후 24시간 동안 복구할 수 있는 일기 정보를 담는 모델
+struct DeletedDiaryRecovery: Identifiable, Codable {
+    let id: UUID
+    let serverId: Int
+    let dateText: String
+    let title: String
+    let content: String
+    let mood: String
+    let deletedAt: Date
+
+    init(diary: DiaryEntry, deletedAt: Date = Date()) {
+        self.id = UUID()
+        self.serverId = diary.serverId ?? 0
+        self.dateText = diary.dateText
+        self.title = diary.title
+        self.content = diary.content
+        self.mood = diary.mood
+        self.deletedAt = deletedAt
+    }
+
+    var diary: DiaryEntry {
+        DiaryEntry(serverId: serverId, dateText: dateText, title: title, content: content, mood: mood)
+    }
+
+    var expiresAt: Date {
+        deletedAt.addingTimeInterval(24 * 60 * 60)
+    }
+
+    var isExpired: Bool {
+        Date() >= expiresAt
+    }
+}
+
 // 나와 상대방의 일기 교환 정보를 담는 모델
 struct ExchangeStory: Identifiable {
     let id = UUID()

@@ -31,6 +31,7 @@ final class AppViewModel: ObservableObject {
     @Published var exchangeStories: [ExchangeStory] = []
     @Published var draftTitle = ""
     @Published var draftContent = ""
+    @Published var draftMood = "기대"
     @Published var latestExchange: ExchangeStory?
     @Published var authToken: String?
     @Published var currentUser: UserProfileResponse?
@@ -41,8 +42,15 @@ final class AppViewModel: ObservableObject {
     @Published var diaryMoodFilter = ""
     @Published var matchNotifications: [MatchNotification] = []
     @Published var accountMessage = ""
-    @Published var lastDeletedDiary: DiaryEntry?
+    @Published var recoverableDiaries: [DeletedDiaryRecovery] = [] {
+        didSet { saveRecoverableDiaries() }
+    }
     @Published var toastMessage = ""
+
+    init() {
+        recoverableDiaries = loadRecoverableDiaries()
+        removeExpiredRecoveries()
+    }
 
     // 로그인 입력이 완료되면 메인 화면으로 이동
     func login() async {
@@ -267,7 +275,7 @@ final class AppViewModel: ObservableObject {
                     diaryDate: todayServerDate(),
                     title: title,
                     content: content,
-                    mood: "기대"
+                    mood: draftMood
                 )
             )
         } catch {
@@ -287,7 +295,7 @@ final class AppViewModel: ObservableObject {
             dateText: formattedToday(from: diaryPayload?.diaryDate),
             title: diaryPayload?.title ?? title,
             content: diaryPayload?.content ?? content,
-            mood: diaryPayload?.mood ?? "기대"
+            mood: diaryPayload?.mood ?? draftMood
         )
         diaryEntries.insert(newEntry, at: 0)
 
@@ -321,6 +329,7 @@ final class AppViewModel: ObservableObject {
 
         draftTitle = ""
         draftContent = ""
+        draftMood = "기대"
         diarySaveMessage = ""
         showToast("오늘의 일기를 저장했습니다.")
         return true
@@ -440,10 +449,14 @@ final class AppViewModel: ObservableObject {
 
         do {
             try await userAPIService.deleteDiary(diaryId: serverId)
-            diaryEntries.removeAll { $0.id == diary.id }
-            lastDeletedDiary = diary
+            recoverableDiaries.insert(DeletedDiaryRecovery(diary: diary), at: 0)
+            do {
+                try await loadDiaryHistory(reset: true)
+            } catch {
+                diaryHistoryMessage = "일기 목록을 다시 불러오지 못했습니다. 잠시 후 재시도해주세요."
+            }
             diarySaveMessage = ""
-            showToast("일기를 삭제했습니다. 잠시 동안 복구할 수 있습니다.")
+            showToast("삭제한 일기는 복구 목록에 저장되며 24시간 동안 보관됩니다.")
             return true
         } catch {
             diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
@@ -452,14 +465,21 @@ final class AppViewModel: ObservableObject {
         }
     }
 
-    // 마지막으로 삭제한 일기를 복구하고 목록에 다시 반영
-    func restoreLastDeletedDiary() async -> Bool {
-        guard let deletedDiary = lastDeletedDiary, let serverId = deletedDiary.serverId else { return false }
+    // 선택한 삭제 일기를 복구하고 서버 목록을 다시 조회
+    func restoreDiary(_ recovery: DeletedDiaryRecovery) async -> Bool {
+        removeExpiredRecoveries()
+        guard !recovery.isExpired else {
+            showToast("복구 가능 기간이 만료되었습니다.")
+            return false
+        }
         do {
-            let response = try await userAPIService.restoreDiary(diaryId: serverId)
-            let restoredDiary = response.map { diaryEntry(from: $0, fallback: deletedDiary) } ?? deletedDiary
-            diaryEntries.insert(restoredDiary, at: 0)
-            lastDeletedDiary = nil
+            _ = try await userAPIService.restoreDiary(diaryId: recovery.serverId)
+            recoverableDiaries.removeAll { $0.id == recovery.id }
+            do {
+                try await loadDiaryHistory(reset: true)
+            } catch {
+                diaryHistoryMessage = "복구는 완료되었지만 목록을 다시 불러오지 못했습니다."
+            }
             diarySaveMessage = ""
             showToast("일기를 복구했습니다.")
             return true
@@ -533,6 +553,7 @@ final class AppViewModel: ObservableObject {
         exchangeStories = []
         matchNotifications = []
         latestExchange = nil
+        recoverableDiaries = []
         toastMessage = ""
         onboardingStep = .login
     }
@@ -560,6 +581,25 @@ final class AppViewModel: ObservableObject {
             content: payload.content ?? fallback.content,
             mood: payload.mood ?? fallback.mood
         )
+    }
+
+    // 만료된 복구 항목을 제거
+    func removeExpiredRecoveries() {
+        recoverableDiaries.removeAll { $0.isExpired }
+    }
+
+    // 복구 가능한 일기를 앱 재실행 후에도 유지
+    private func saveRecoverableDiaries() {
+        guard let data = try? JSONEncoder().encode(recoverableDiaries) else { return }
+        UserDefaults.standard.set(data, forKey: "bottleDiary.recoverableDiaries")
+    }
+
+    private func loadRecoverableDiaries() -> [DeletedDiaryRecovery] {
+        guard let data = UserDefaults.standard.data(forKey: "bottleDiary.recoverableDiaries"),
+              let recoveries = try? JSONDecoder().decode([DeletedDiaryRecovery].self, from: data) else {
+            return []
+        }
+        return recoveries
     }
 
     private func replaceDiary(_ updatedDiary: DiaryEntry, matching diary: DiaryEntry) {

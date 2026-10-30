@@ -4,6 +4,7 @@ import SwiftUI
 struct DiaryComposerView: View {
     @ObservedObject var viewModel: AppViewModel
     @Environment(\.dismiss) private var dismiss
+    private let moodOptions = ["기대", "행복", "평온", "담담", "우울", "화남"]
 
     var body: some View {
         NavigationStack {
@@ -14,14 +15,6 @@ struct DiaryComposerView: View {
                     HStack {
                         Text("🕯️")
                             .font(.system(size: 42))
-                        Spacer()
-                        Text("매칭")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color.blue.opacity(0.65))
-                            .clipShape(Capsule())
                     }
 
                     Text("오늘 늘 내용이 메모로 적힌다면?")
@@ -30,6 +23,8 @@ struct DiaryComposerView: View {
 
                     TextField("제목", text: $viewModel.draftTitle)
                         .font(.title3.weight(.semibold))
+
+                    moodSelector
 
                     ZStack(alignment: .topLeading) {
                         if viewModel.draftContent.isEmpty {
@@ -73,6 +68,33 @@ struct DiaryComposerView: View {
                     }
                     .font(.footnote.weight(.semibold))
                     .disabled(viewModel.isSubmittingDiary)
+                }
+            }
+        }
+    }
+
+    // 오늘의 기분을 선택하는 입력 영역
+    private var moodSelector: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("오늘의 기분")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color.black.opacity(0.65))
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(moodOptions, id: \.self) { mood in
+                        Button {
+                            viewModel.draftMood = mood
+                        } label: {
+                            Text(mood)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(viewModel.draftMood == mood ? .white : Color(hex: "#25476D"))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 9)
+                                .background(viewModel.draftMood == mood ? Color(hex: "#25476D") : Color.white.opacity(0.8))
+                                .clipShape(Capsule())
+                        }
+                    }
                 }
             }
         }
