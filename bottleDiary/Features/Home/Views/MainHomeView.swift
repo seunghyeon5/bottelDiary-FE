@@ -5,6 +5,9 @@ struct MainHomeView: View {
     @ObservedObject var viewModel: AppViewModel
     @Binding var isPresentingComposer: Bool
     @State private var selectedDiary: DiaryEntry?
+    @State private var isShowingProfile = false
+    @State private var isShowingNotifications = false
+    @State private var isShowingDiaryFilters = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -29,18 +32,57 @@ struct MainHomeView: View {
                     .shadow(color: .black.opacity(0.25), radius: 12, y: 8)
             }
             .padding(.bottom, 28)
+
+            if !viewModel.toastMessage.isEmpty {
+                Text(viewModel.toastMessage)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 11)
+                    .background(Color.black.opacity(0.78))
+                    .clipShape(Capsule())
+                    .padding(.bottom, 92)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
         .sheet(item: $selectedDiary) { diary in
             DiaryDetailView(diary: diary, viewModel: viewModel)
                 .presentationDetents([.large])
+        }
+        .sheet(isPresented: $isShowingProfile) {
+            UserProfileView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $isShowingNotifications) {
+            MatchNotificationsView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $isShowingDiaryFilters) {
+            DiaryFilterView(viewModel: viewModel)
         }
     }
 
     // 메인 화면 상단 헤더 영역
     private var header: some View {
         HStack {
-            Image(systemName: "line.3.horizontal")
+            Button {
+                isShowingProfile = true
+            } label: {
+                Image(systemName: "line.3.horizontal")
+            }
+            Text(viewModel.currentUser?.nickname ?? "bottleDiary")
+                .font(.subheadline.weight(.semibold))
             Spacer()
+            Button {
+                isShowingNotifications = true
+            } label: {
+                Image(systemName: viewModel.matchNotifications.contains(where: { !$0.read }) ? "bell.badge.fill" : "bell")
+            }
+            if viewModel.selectedTab == .myStories {
+                Button {
+                    isShowingDiaryFilters = true
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                }
+            }
             if viewModel.selectedTab == .otherStories {
                 Text("매칭 중")
                     .font(.caption.weight(.semibold))
@@ -49,7 +91,9 @@ struct MainHomeView: View {
                     .background(Color.blue.opacity(0.6))
                     .clipShape(Capsule())
             }
+
         }
+        .animation(.easeInOut, value: viewModel.toastMessage)
         .foregroundStyle(.white)
         .padding(.horizontal, 18)
         .padding(.top, 18)
@@ -88,15 +132,47 @@ struct MainHomeView: View {
             ScrollView {
                 VStack(spacing: 14) {
                     if !viewModel.diaryHistoryMessage.isEmpty {
-                        Text(viewModel.diaryHistoryMessage)
-                            .font(.footnote)
-                            .foregroundStyle(Color(hex: "#FFD7D7"))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 4)
+                        HStack(spacing: 10) {
+                            Text(viewModel.diaryHistoryMessage)
+                                .font(.footnote)
+                                .foregroundStyle(Color(hex: "#FFD7D7"))
+                            Spacer()
+                            Button("재시도") {
+                                Task { try? await viewModel.loadDiaryHistory(reset: true) }
+                            }
+                            .font(.footnote.weight(.bold))
+                            .foregroundStyle(.white)
+                        }
+                        .padding(.horizontal, 4)
+                    }
+
+                    if let deletedDiary = viewModel.lastDeletedDiary {
+                        HStack(spacing: 12) {
+                            Text("최근 일기를 삭제했습니다.")
+                                .font(.footnote)
+                                .foregroundStyle(.white)
+                            Spacer()
+                            Button("복구") {
+                                Task { _ = await viewModel.restoreLastDeletedDiary() }
+                            }
+                            .font(.footnote.weight(.bold))
+                            .foregroundStyle(Color(hex: "#1E4267"))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
+                            .background(Color.white)
+                            .clipShape(Capsule())
+                        }
+                        .padding(12)
+                        .background(Color.black.opacity(0.22))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .accessibilityLabel("\(deletedDiary.title) 일기 복구")
                     }
 
                     if viewModel.diaryEntries.isEmpty {
                         VStack(spacing: 10) {
+                            Image(systemName: "book.closed")
+                                .font(.system(size: 32))
+                                .foregroundStyle(Color(hex: "#A9D5F0"))
                             Text("아직 작성한 일기가 없습니다.")
                                 .font(.headline)
                                 .foregroundStyle(.white)
@@ -115,6 +191,12 @@ struct MainHomeView: View {
                             DiaryCardView(diary: diary)
                         }
                         .buttonStyle(.plain)
+                        .onAppear {
+                            if diary.id == viewModel.diaryEntries.last?.id,
+                               viewModel.hasMoreDiaryHistory {
+                                Task { try? await viewModel.loadDiaryHistory(reset: false) }
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 16)

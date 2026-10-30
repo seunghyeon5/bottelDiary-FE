@@ -48,6 +48,16 @@ struct ExchangeStory: Identifiable {
     let myEntry: DiaryEntry
     let partnerEntry: DiaryEntry
     let isActive: Bool
+    let status: String?
+
+    init(partnerName: String, daysRemaining: Int, myEntry: DiaryEntry, partnerEntry: DiaryEntry, isActive: Bool, status: String? = nil) {
+        self.partnerName = partnerName
+        self.daysRemaining = daysRemaining
+        self.myEntry = myEntry
+        self.partnerEntry = partnerEntry
+        self.isActive = isActive
+        self.status = status
+    }
 }
 
 // 회원가입 요청에 사용하는 API 모델
@@ -112,6 +122,9 @@ struct UserResponsePayload: Codable {
     let phoneNum: String?
 }
 
+// 로그인 사용자의 마이페이지 정보를 담는 API 모델
+typealias UserProfileResponse = UserResponsePayload
+
 // 일기 생성 요청/응답에 사용하는 API 모델
 struct DiaryCreateRequest: Codable {
     let diaryDate: String
@@ -143,12 +156,61 @@ struct DiaryResponsePayload: Codable {
     let createdAt: String?
 }
 
+// 일기 히스토리 페이징 응답을 담는 API 모델
+struct DiaryHistoryPageResponse: Codable {
+    let content: [DiaryResponsePayload]
+    let totalPages: Int?
+    let totalElements: Int?
+    let number: Int?
+    let size: Int?
+    let first: Bool?
+    let last: Bool?
+}
+
 struct DiaryExchangeResponsePayload: Codable {
     let exchangeId: Int?
     let exchangeDate: String?
     let myDiary: DiaryResponsePayload?
     let partnerDiary: DiaryResponsePayload?
     let active: Bool?
+    let status: String?
+}
+
+// 새 교환 알림 정보를 담는 API 모델
+struct MatchNotification: Decodable, Identifiable {
+    let id: Int
+    let matchId: Int?
+    let message: String?
+    let createdAt: String?
+    let read: Bool
+
+    init(id: Int, matchId: Int?, message: String?, createdAt: String?, read: Bool) {
+        self.id = id
+        self.matchId = matchId
+        self.message = message
+        self.createdAt = createdAt
+        self.read = read
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case matchId
+        case message
+        case createdAt
+        case read
+        case isRead
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        matchId = try container.decodeIfPresent(Int.self, forKey: .matchId)
+        message = try container.decodeIfPresent(String.self, forKey: .message)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        read = try container.decodeIfPresent(Bool.self, forKey: .read)
+            ?? container.decodeIfPresent(Bool.self, forKey: .isRead)
+            ?? false
+    }
 }
 
 // 서버 에러 메시지를 받기 위한 공통 API 모델

@@ -33,6 +33,16 @@ final class AppViewModel: ObservableObject {
     @Published var draftContent = ""
     @Published var latestExchange: ExchangeStory?
     @Published var authToken: String?
+    @Published var currentUser: UserProfileResponse?
+    @Published var diaryHistoryPage = 0
+    @Published var hasMoreDiaryHistory = false
+    @Published var diaryFromDate = ""
+    @Published var diaryToDate = ""
+    @Published var diaryMoodFilter = ""
+    @Published var matchNotifications: [MatchNotification] = []
+    @Published var accountMessage = ""
+    @Published var lastDeletedDiary: DiaryEntry?
+    @Published var toastMessage = ""
 
     // 로그인 입력이 완료되면 메인 화면으로 이동
     func login() async {
@@ -63,8 +73,13 @@ final class AppViewModel: ObservableObject {
             onboardingStep = .completed
 
             do {
-                try await loadDiaryHistory()
+                try await loadDiaryHistory(reset: true)
+                await loadMatchNotifications()
             } catch {
+                if isSessionExpired(error) {
+                    logout()
+                    return
+                }
                 diaryEntries = []
                 diaryHistoryMessage = "일기 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
             }
@@ -257,7 +272,12 @@ final class AppViewModel: ObservableObject {
             )
         } catch {
             let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            diarySaveMessage = message
+            if message.contains("중복") || message.contains("이미") || message.contains("날짜") {
+                diarySaveMessage = "오늘 날짜의 일기가 이미 있습니다. 기존 일기를 수정하거나 삭제 후 다시 작성해주세요."
+            } else {
+                diarySaveMessage = message
+            }
+            if isSessionExpired(error) { logout() }
             return false
         }
 
@@ -291,7 +311,8 @@ final class AppViewModel: ObservableObject {
                     content: partnerDiary.content ?? "아직 교환된 상대 일기 내용이 없습니다.",
                     mood: partnerDiary.mood ?? "담담"
                 ),
-                isActive: exchangePayload.active ?? true
+                isActive: exchangePayload.active ?? (exchangePayload.status == "ACTIVE"),
+                status: exchangePayload.status
             )
             exchangeStories.insert(exchange, at: 0)
             latestExchange = exchange
@@ -301,12 +322,14 @@ final class AppViewModel: ObservableObject {
         draftTitle = ""
         draftContent = ""
         diarySaveMessage = ""
+        showToast("오늘의 일기를 저장했습니다.")
         return true
     }
 
     // 로그인 완료 후 사용자 정보를 화면 상태에 반영
     private func applyLoggedInUser(_ user: UserResponsePayload) {
         currentUserId = user.id
+        currentUser = user
         authToken = authSessionStore.authorizationHeaderValue
         authNoticeMessage = ""
         signupMessage = ""
@@ -315,9 +338,21 @@ final class AppViewModel: ObservableObject {
     }
 
     // 현재 로그인한 사용자의 일기 히스토리를 불러옴
-    private func loadDiaryHistory() async throws {
-        let history = try await userAPIService.fetchDiaryHistory()
-        diaryEntries = history.map { payload in
+    func loadDiaryHistory(
+        reset: Bool = true,
+        fromDate: String? = nil,
+        toDate: String? = nil,
+        mood: String? = nil
+    ) async throws {
+        let page = reset ? 0 : diaryHistoryPage + 1
+        let history = try await userAPIService.fetchDiaryHistory(
+            page: page,
+            size: 10,
+            fromDate: fromDate ?? diaryFromDate,
+            toDate: toDate ?? diaryToDate,
+            mood: mood ?? diaryMoodFilter
+        )
+        let entries = history.content.map { payload in
             DiaryEntry(
                 serverId: payload.id,
                 dateText: formattedToday(from: payload.diaryDate),
@@ -326,7 +361,36 @@ final class AppViewModel: ObservableObject {
                 mood: payload.mood ?? "기록"
             )
         }
+        if reset { diaryEntries = entries } else { diaryEntries.append(contentsOf: entries) }
+        diaryHistoryPage = page
+        hasMoreDiaryHistory = history.last ?? ((history.number ?? page) + 1 < (history.totalPages ?? page + 1))
         diaryHistoryMessage = ""
+    }
+
+    // 날짜와 기분 조건으로 일기 히스토리를 다시 조회
+    func applyDiaryFilters(fromDate: String, toDate: String, mood: String) async {
+        diaryFromDate = fromDate
+        diaryToDate = toDate
+        diaryMoodFilter = mood
+        do {
+            try await loadDiaryHistory(reset: true)
+        } catch {
+            diaryEntries = []
+            diaryHistoryMessage = "필터 조건에 맞는 일기를 불러오지 못했습니다."
+            if isSessionExpired(error) { logout() }
+        }
+    }
+
+    // 특정 일기의 최신 상세 정보를 서버에서 다시 불러옴
+    func loadDiaryDetail(_ diary: DiaryEntry) async -> DiaryEntry? {
+        guard let serverId = diary.serverId else { return nil }
+        do {
+            let payload = try await userAPIService.fetchDiaryDetail(diaryId: serverId)
+            return diaryEntry(from: payload, fallback: diary)
+        } catch {
+            if isSessionExpired(error) { logout() }
+            return nil
+        }
     }
 
     // 선택한 일기를 수정하고 목록의 해당 항목도 즉시 갱신
@@ -358,9 +422,11 @@ final class AppViewModel: ObservableObject {
             )
             replaceDiary(updatedDiary, matching: diary)
             diarySaveMessage = ""
+            showToast("일기를 수정했습니다.")
             return updatedDiary
         } catch {
             diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if isSessionExpired(error) { logout() }
             return nil
         }
     }
@@ -375,12 +441,125 @@ final class AppViewModel: ObservableObject {
         do {
             try await userAPIService.deleteDiary(diaryId: serverId)
             diaryEntries.removeAll { $0.id == diary.id }
+            lastDeletedDiary = diary
             diarySaveMessage = ""
+            showToast("일기를 삭제했습니다. 잠시 동안 복구할 수 있습니다.")
             return true
         } catch {
             diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if isSessionExpired(error) { logout() }
             return false
         }
+    }
+
+    // 마지막으로 삭제한 일기를 복구하고 목록에 다시 반영
+    func restoreLastDeletedDiary() async -> Bool {
+        guard let deletedDiary = lastDeletedDiary, let serverId = deletedDiary.serverId else { return false }
+        do {
+            let response = try await userAPIService.restoreDiary(diaryId: serverId)
+            let restoredDiary = response.map { diaryEntry(from: $0, fallback: deletedDiary) } ?? deletedDiary
+            diaryEntries.insert(restoredDiary, at: 0)
+            lastDeletedDiary = nil
+            diarySaveMessage = ""
+            showToast("일기를 복구했습니다.")
+            return true
+        } catch {
+            diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if isSessionExpired(error) { logout() }
+            return false
+        }
+    }
+
+    // 마이페이지 정보를 서버에서 조회
+    func loadCurrentUser() async {
+        do {
+            currentUser = try await userAPIService.fetchCurrentUser()
+            currentUserId = currentUser?.id ?? currentUserId
+            accountMessage = ""
+        } catch {
+            accountMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if isSessionExpired(error) { logout() }
+        }
+    }
+
+    // 로그인 사용자의 계정을 탈퇴하고 인증 상태를 초기화
+    func withdraw() async -> Bool {
+        do {
+            try await userAPIService.withdrawCurrentUser()
+            logout()
+            return true
+        } catch {
+            accountMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if isSessionExpired(error) { logout() }
+            return false
+        }
+    }
+
+    // 새 교환 알림을 불러옴
+    func loadMatchNotifications() async {
+        do {
+            matchNotifications = try await userAPIService.fetchMatchNotifications()
+        } catch {
+            if isSessionExpired(error) { logout() }
+        }
+    }
+
+    // 선택한 교환 알림을 읽음 처리
+    func markNotificationRead(_ notification: MatchNotification) async {
+        guard let index = matchNotifications.firstIndex(where: { $0.id == notification.id }) else { return }
+        do {
+            try await userAPIService.markMatchNotificationRead(notificationId: notification.id)
+        } catch {
+            if isSessionExpired(error) { logout() }
+            return
+        }
+        let updated = MatchNotification(
+            id: notification.id,
+            matchId: notification.matchId,
+            message: notification.message,
+            createdAt: notification.createdAt,
+            read: true
+        )
+        matchNotifications[index] = updated
+    }
+
+    // 앱의 로그인 상태와 사용자별 데이터를 초기화
+    func logout() {
+        authSessionStore.clear()
+        authToken = nil
+        currentUserId = nil
+        currentUser = nil
+        diaryEntries = []
+        exchangeStories = []
+        matchNotifications = []
+        latestExchange = nil
+        toastMessage = ""
+        onboardingStep = .login
+    }
+
+    // 네트워크 작업 결과를 잠시 보여주는 공통 안내 메시지
+    func showToast(_ message: String) {
+        toastMessage = message
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            if toastMessage == message { toastMessage = "" }
+        }
+    }
+
+    // 인증 만료 오류인지 확인
+    private func isSessionExpired(_ error: Error) -> Bool {
+        if case SignupServiceError.sessionExpired = error { return true }
+        return false
+    }
+
+    private func diaryEntry(from payload: DiaryResponsePayload, fallback: DiaryEntry) -> DiaryEntry {
+        DiaryEntry(
+            serverId: payload.id ?? fallback.serverId,
+            dateText: payload.diaryDate.map { formattedToday(from: $0) } ?? fallback.dateText,
+            title: payload.title ?? fallback.title,
+            content: payload.content ?? fallback.content,
+            mood: payload.mood ?? fallback.mood
+        )
     }
 
     private func replaceDiary(_ updatedDiary: DiaryEntry, matching diary: DiaryEntry) {

@@ -106,6 +106,21 @@ struct UserAPIService {
         throw SignupServiceError.server(message: message, statusCode: httpResponse.statusCode)
     }
 
+    // 로그인한 사용자의 마이페이지 정보를 서버에서 조회
+    func fetchCurrentUser() async throws -> UserProfileResponse {
+        let url = baseURL.appendingPathComponent("api/users/me")
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url, method: "GET"))
+        try validate(response: response, data: data, fallback: "사용자 정보를 불러오지 못했습니다.")
+        return try JSONDecoder().decode(UserProfileResponse.self, from: data)
+    }
+
+    // 로그인한 사용자의 계정을 탈퇴 처리
+    func withdrawCurrentUser() async throws {
+        let url = baseURL.appendingPathComponent("api/users/me/withdraw")
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url, method: "POST"))
+        try validate(response: response, data: data, fallback: "회원 탈퇴에 실패했습니다.")
+    }
+
     // 일기 생성 요청을 서버로 전송
     func createDiary(request: DiaryCreateRequest) async throws -> DiaryCreateResponse {
         let url = baseURL.appendingPathComponent("api/diaries")
@@ -127,20 +142,39 @@ struct UserAPIService {
     }
 
     // 사용자의 일기 히스토리를 서버에서 조회
-    func fetchDiaryHistory() async throws -> [DiaryResponsePayload] {
-        let url = baseURL.appendingPathComponent("api/diaries/history")
+    func fetchDiaryHistory(
+        page: Int = 0,
+        size: Int = 10,
+        fromDate: String? = nil,
+        toDate: String? = nil,
+        mood: String? = nil
+    ) async throws -> DiaryHistoryPageResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/diaries/history"), resolvingAgainstBaseURL: false)
+        var queryItems = [
+            URLQueryItem(name: "page", value: String(page)),
+            URLQueryItem(name: "size", value: String(size))
+        ]
+        if let fromDate, !fromDate.isEmpty { queryItems.append(URLQueryItem(name: "fromDate", value: fromDate)) }
+        if let toDate, !toDate.isEmpty { queryItems.append(URLQueryItem(name: "toDate", value: toDate)) }
+        if let mood, !mood.isEmpty { queryItems.append(URLQueryItem(name: "mood", value: mood)) }
+        components?.queryItems = queryItems
+        guard let url = components?.url else { throw URLError(.badURL) }
         let urlRequest = authorizedRequest(url: url, method: "GET")
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
+        try validate(response: response, data: data, fallback: "일기 히스토리 조회에 실패했습니다.")
+        if let pageResponse = try? JSONDecoder().decode(DiaryHistoryPageResponse.self, from: data) {
+            return pageResponse
         }
+        let legacyContent = try JSONDecoder().decode([DiaryResponsePayload].self, from: data)
+        return DiaryHistoryPageResponse(content: legacyContent, totalPages: 1, totalElements: legacyContent.count, number: 0, size: legacyContent.count, first: true, last: true)
+    }
 
-        if (200...299).contains(httpResponse.statusCode) {
-            return try JSONDecoder().decode([DiaryResponsePayload].self, from: data)
-        }
-
-        let message = decodeErrorMessage(from: data, fallback: "일기 히스토리 조회에 실패했습니다.")
-        throw SignupServiceError.server(message: message, statusCode: httpResponse.statusCode)
+    // 선택한 일기 상세 정보를 서버에서 조회
+    func fetchDiaryDetail(diaryId: Int) async throws -> DiaryResponsePayload {
+        let url = baseURL.appendingPathComponent("api/diaries/\(diaryId)")
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url, method: "GET"))
+        try validate(response: response, data: data, fallback: "일기 상세 정보를 불러오지 못했습니다.")
+        return try JSONDecoder().decode(DiaryResponsePayload.self, from: data)
     }
 
     // 기존 일기의 제목과 내용을 서버에서 수정
@@ -182,6 +216,43 @@ struct UserAPIService {
         }
     }
 
+    // 삭제된 일기를 다시 활성화
+    func restoreDiary(diaryId: Int) async throws -> DiaryResponsePayload? {
+        let url = baseURL.appendingPathComponent("api/diaries/\(diaryId)/restore")
+        let urlRequest = authorizedRequest(url: url, method: "PATCH")
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        try validate(response: response, data: data, fallback: "일기 복구에 실패했습니다.")
+        guard !data.isEmpty else { return nil }
+        return try? JSONDecoder().decode(DiaryResponsePayload.self, from: data)
+    }
+
+    // 로그인 사용자의 교환 알림 목록을 조회
+    func fetchMatchNotifications() async throws -> [MatchNotification] {
+        let url = baseURL.appendingPathComponent("api/matches/notifications")
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url, method: "GET"))
+        try validate(response: response, data: data, fallback: "교환 알림을 불러오지 못했습니다.")
+        return try JSONDecoder().decode([MatchNotification].self, from: data)
+    }
+
+    // 교환 알림을 읽음 상태로 변경
+    func markMatchNotificationRead(notificationId: Int) async throws {
+        let url = baseURL.appendingPathComponent("api/matches/notifications/\(notificationId)/read")
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url, method: "PATCH"))
+        try validate(response: response, data: data, fallback: "알림 읽음 처리에 실패했습니다.")
+    }
+
+    // 인증 API 응답의 성공 여부를 공통으로 확인
+    private func validate(response: URLResponse, data: Data, fallback: String) throws {
+        guard let httpResponse = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+        if httpResponse.statusCode == 401 {
+            authSessionStore.clear()
+            throw SignupServiceError.sessionExpired
+        }
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw SignupServiceError.server(message: decodeErrorMessage(from: data, fallback: fallback), statusCode: httpResponse.statusCode)
+        }
+    }
+
     private func decodeErrorMessage(from data: Data, fallback: String) -> String {
         let apiError = try? JSONDecoder().decode(APIErrorResponse.self, from: data)
         return apiError?.message ?? fallback
@@ -203,11 +274,14 @@ struct UserAPIService {
 // 회원가입 API 처리 중 사용하는 에러 타입
 enum SignupServiceError: LocalizedError {
     case server(message: String, statusCode: Int)
+    case sessionExpired
 
     var errorDescription: String? {
         switch self {
         case let .server(message, _):
             return message
+        case .sessionExpired:
+            return "로그인 세션이 만료되었습니다. 다시 로그인해주세요."
         }
     }
 }

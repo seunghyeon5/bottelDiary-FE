@@ -84,6 +84,11 @@ struct DiaryDetailView: View {
                     displayedDiary = updatedDiary
                 }
             }
+            .task {
+                if let latestDiary = await viewModel.loadDiaryDetail(displayedDiary) {
+                    displayedDiary = latestDiary
+                }
+            }
             .confirmationDialog("이 일기를 삭제할까요?", isPresented: $isShowingDeleteDialog, titleVisibility: .visible) {
                 Button("삭제", role: .destructive) {
                     deleteDiary()

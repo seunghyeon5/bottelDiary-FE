@@ -133,8 +133,13 @@ struct DiaryCardView: View {
                 Text(diary.dateText)
                     .font(.headline)
                 Spacer()
-                Image(systemName: "ellipsis")
-                    .foregroundStyle(.secondary)
+                Text(diary.mood)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color(hex: "#25476D"))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color(hex: "#DCEFFF"))
+                    .clipShape(Capsule())
             }
             Text(diary.title)
                 .font(.subheadline.weight(.semibold))
@@ -161,6 +166,11 @@ struct ExchangeCardView: View {
                 Text("\(story.partnerName)와 \(story.daysRemaining)일째")
                     .font(.headline)
                 Spacer()
+                if let status = story.status {
+                    Text(status == "ACTIVE" ? "연결 중" : "연결 종료")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(status == "ACTIVE" ? Color.green : Color.secondary)
+                }
                 Button("종료") {
                     disconnect()
                 }
