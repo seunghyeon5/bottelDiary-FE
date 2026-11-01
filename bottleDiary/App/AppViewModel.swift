@@ -29,6 +29,7 @@ final class AppViewModel: ObservableObject {
     @Published var selectedTab: BottleDiaryTab = .myStories
     @Published var diaryEntries: [DiaryEntry] = []
     @Published var exchangeStories: [ExchangeStory] = []
+    @Published var pendingExchanges: [DiaryExchangeResponsePayload] = []
     @Published var draftTitle = ""
     @Published var draftContent = ""
     @Published var draftMood = "기대"
@@ -49,7 +50,7 @@ final class AppViewModel: ObservableObject {
 
     // 읽지 않은 교환 알림이 있으면 수신 대기 배너를 표시
     var hasPendingExchangeNotification: Bool {
-        matchNotifications.contains { !$0.read }
+        !pendingExchanges.isEmpty
     }
 
     init() {
@@ -87,7 +88,6 @@ final class AppViewModel: ObservableObject {
 
             do {
                 try await loadDiaryHistory(reset: true)
-                await loadMatchNotifications()
             } catch {
                 if isSessionExpired(error) {
                     logout()
@@ -96,6 +96,10 @@ final class AppViewModel: ObservableObject {
                 diaryEntries = []
                 diaryHistoryMessage = "일기 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
             }
+
+            // 히스토리 조회가 실패해도 로그인 성공 후 교환 화면 진입은 가능하도록 별도 조회
+            await loadPendingExchanges()
+            await loadExchangeConnections()
         } catch {
             authToken = nil
             authSessionStore.clear()
@@ -336,11 +340,9 @@ final class AppViewModel: ObservableObject {
         draftContent = ""
         draftMood = "기대"
         diarySaveMessage = ""
-        if response.exchange == nil {
-            showToast("일기가 전달되었습니다. 답장을 기다리고 있어요.")
-        } else {
-            showToast("오늘의 일기를 저장했습니다.")
-        }
+        showToast(response.exchange == nil ? "오늘의 일기를 저장했습니다." : "일기가 전달되었습니다. 답장을 기다리고 있어요.")
+        await loadPendingExchanges()
+        await loadExchangeConnections()
         return true
     }
 
@@ -533,6 +535,109 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    // 나에게 도착한 답장 대기 일기를 조회
+    func loadPendingExchanges() async {
+        do {
+            pendingExchanges = try await userAPIService.fetchMatchInbox()
+        } catch {
+            pendingExchanges = []
+            if isSessionExpired(error) { logout() }
+        }
+    }
+
+    // 내가 보내거나 받은 교환 요청과 답장 상태를 조회
+    func loadExchangeConnections() async {
+        do {
+            let connections = try await userAPIService.fetchMatchConnections()
+            exchangeStories = connections.compactMap { exchange in
+                let myDiary = exchange.myDiary ?? DiaryResponsePayload(
+                    id: nil,
+                    userId: nil,
+                    diaryDate: exchange.exchangeDate,
+                    title: "내 일기",
+                    content: "아직 작성한 답장이 없습니다.",
+                    mood: "기록",
+                    createdAt: nil,
+                    updatedAt: nil
+                )
+                let partnerDiary = exchange.partnerDiary ?? DiaryResponsePayload(
+                    id: nil,
+                    userId: nil,
+                    diaryDate: exchange.exchangeDate,
+                    title: "답장 대기 중",
+                    content: "상대방의 답장을 기다리고 있어요.",
+                    mood: "기다림",
+                    createdAt: nil,
+                    updatedAt: nil
+                )
+                return ExchangeStory(
+                    exchangeId: exchange.exchangeId,
+                    partnerUserId: exchange.senderUserId == currentUserId ? exchange.recipientUserId : exchange.senderUserId,
+                    partnerName: "익명의 친구",
+                    daysRemaining: remainingDays(until: exchange.expiresAt),
+                    myEntry: diaryEntry(from: myDiary, fallbackDate: exchange.exchangeDate),
+                    partnerEntry: diaryEntry(from: partnerDiary, fallbackDate: exchange.exchangeDate),
+                    isActive: exchange.active ?? false,
+                    status: exchange.status
+                )
+            }
+        } catch {
+            exchangeStories = []
+            if isSessionExpired(error) { logout() }
+        }
+    }
+
+    // 받은 일기에 답장하고 수신 대기 목록을 갱신
+    func replyToPending(exchangeId: Int, title: String, content: String, mood: String) async -> Bool {
+        do {
+            _ = try await userAPIService.replyToMatch(
+                exchangeId: exchangeId,
+                request: DiaryCreateRequest(
+                    diaryDate: todayServerDate(),
+                    title: title,
+                    content: content,
+                    mood: mood
+                )
+            )
+            await loadPendingExchanges()
+            await loadExchangeConnections()
+            showToast("답장을 보냈습니다. 이제 서로의 일기를 확인할 수 있어요.")
+            return true
+        } catch {
+            diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if isSessionExpired(error) { logout() }
+            return false
+        }
+    }
+
+    // 받은 일기 교환 요청을 거절하고 목록을 갱신
+    func rejectPending(exchangeId: Int) async -> Bool {
+        do {
+            _ = try await userAPIService.rejectMatch(exchangeId: exchangeId)
+            await loadPendingExchanges()
+            showToast("교환 요청을 거절했습니다.")
+            return true
+        } catch {
+            diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if isSessionExpired(error) { logout() }
+            return false
+        }
+    }
+
+    // 답장이 오지 않은 일기를 다시 매칭
+    func rematchDiary(_ diary: DiaryEntry) async -> Bool {
+        guard let diaryId = diary.serverId else { return false }
+        do {
+            _ = try await userAPIService.matchDiary(diaryId: diaryId)
+            showToast("일기를 다시 전달했습니다.")
+            return true
+        } catch {
+            diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if isSessionExpired(error) { logout() }
+            return false
+        }
+    }
+
     // 선택한 교환 알림을 읽음 처리
     func markNotificationRead(_ notification: MatchNotification) async {
         guard let index = matchNotifications.firstIndex(where: { $0.id == notification.id }) else { return }
@@ -560,6 +665,7 @@ final class AppViewModel: ObservableObject {
         currentUser = nil
         diaryEntries = []
         exchangeStories = []
+        pendingExchanges = []
         matchNotifications = []
         latestExchange = nil
         recoverableDiaries = []
@@ -592,6 +698,33 @@ final class AppViewModel: ObservableObject {
         )
     }
 
+    private func diaryEntry(from payload: DiaryResponsePayload, fallbackDate: String?) -> DiaryEntry {
+        DiaryEntry(
+            serverId: payload.id,
+            dateText: formattedToday(from: payload.diaryDate ?? fallbackDate),
+            title: payload.title ?? "제목 없음",
+            content: payload.content ?? "",
+            mood: payload.mood ?? "기록"
+        )
+    }
+
+    private func remainingDays(until expiresAt: String?) -> Int {
+        guard let expiresAt else { return 1 }
+        let date = ISO8601DateFormatter().date(from: expiresAt)
+            ?? localDateTimeFormatter.date(from: expiresAt)
+        guard let date else { return 1 }
+        return max(0, Int(ceil(date.timeIntervalSinceNow / (24 * 60 * 60))))
+    }
+
+    // Spring LocalDateTime 응답(타임존 없는 문자열)을 해석
+    private var localDateTimeFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return formatter
+    }
+
     // 만료된 복구 항목을 제거
     func removeExpiredRecoveries() {
         recoverableDiaries.removeAll { $0.isExpired }
@@ -616,9 +749,45 @@ final class AppViewModel: ObservableObject {
         diaryEntries[index] = updatedDiary
     }
 
-    // 교환 목록에서 연결을 종료
+    // 교환 연결을 종료하고 목록을 다시 조회
     func closeExchange(_ story: ExchangeStory) {
-        exchangeStories.removeAll { $0.id == story.id }
+        guard let exchangeId = story.exchangeId else {
+            exchangeStories.removeAll { $0.id == story.id }
+            return
+        }
+        Task {
+            do {
+                try await userAPIService.disconnectMatch(exchangeId: exchangeId)
+                await loadExchangeConnections()
+                showToast("교환 연결을 종료했습니다.")
+            } catch {
+                diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                if isSessionExpired(error) { logout() }
+            }
+        }
+    }
+
+    // 교환 상대를 차단하고 목록을 다시 조회
+    func blockExchange(_ story: ExchangeStory) {
+        guard let partnerUserId = story.partnerUserId else { return }
+        Task {
+            do {
+                try await userAPIService.blockUser(userId: partnerUserId)
+                await loadExchangeConnections()
+                showToast("상대를 차단했습니다.")
+            } catch {
+                diarySaveMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                if isSessionExpired(error) { logout() }
+            }
+        }
+    }
+
+    // 답장이 오지 않은 내 일기를 다시 매칭
+    func rematchExchange(_ story: ExchangeStory) {
+        Task {
+            _ = await rematchDiary(story.myEntry)
+            await loadExchangeConnections()
+        }
     }
 
     // 오늘 날짜를 화면용 문자열로 변환

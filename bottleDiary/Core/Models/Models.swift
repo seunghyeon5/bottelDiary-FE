@@ -76,6 +76,8 @@ struct DeletedDiaryRecovery: Identifiable, Codable {
 // 나와 상대방의 일기 교환 정보를 담는 모델
 struct ExchangeStory: Identifiable {
     let id = UUID()
+    let exchangeId: Int?
+    let partnerUserId: Int?
     let partnerName: String
     let daysRemaining: Int
     let myEntry: DiaryEntry
@@ -83,7 +85,9 @@ struct ExchangeStory: Identifiable {
     let isActive: Bool
     let status: String?
 
-    init(partnerName: String, daysRemaining: Int, myEntry: DiaryEntry, partnerEntry: DiaryEntry, isActive: Bool, status: String? = nil) {
+    init(exchangeId: Int? = nil, partnerUserId: Int? = nil, partnerName: String, daysRemaining: Int, myEntry: DiaryEntry, partnerEntry: DiaryEntry, isActive: Bool, status: String? = nil) {
+        self.exchangeId = exchangeId
+        self.partnerUserId = partnerUserId
         self.partnerName = partnerName
         self.daysRemaining = daysRemaining
         self.myEntry = myEntry
@@ -166,6 +170,11 @@ struct DiaryCreateRequest: Codable {
     let mood: String?
 }
 
+// 이미 작성한 일기를 다시 매칭할 때 사용하는 API 모델
+struct MatchCreateRequest: Codable {
+    let diaryId: Int
+}
+
 // 일기 수정 요청에 사용하는 API 모델
 struct DiaryUpdateRequest: Codable {
     let title: String
@@ -187,6 +196,7 @@ struct DiaryResponsePayload: Codable {
     let content: String?
     let mood: String?
     let createdAt: String?
+    let updatedAt: String?
 }
 
 // 일기 히스토리 페이징 응답을 담는 API 모델
@@ -200,13 +210,22 @@ struct DiaryHistoryPageResponse: Codable {
     let last: Bool?
 }
 
-struct DiaryExchangeResponsePayload: Codable {
+struct DiaryExchangeResponsePayload: Codable, Identifiable {
     let exchangeId: Int?
     let exchangeDate: String?
+    let senderUserId: Int?
+    let recipientUserId: Int?
+    let expiresAt: String?
     let myDiary: DiaryResponsePayload?
     let partnerDiary: DiaryResponsePayload?
     let active: Bool?
     let status: String?
+
+    var id: Int { exchangeId ?? diaryIdFallback }
+
+    private var diaryIdFallback: Int {
+        myDiary?.id ?? partnerDiary?.id ?? 0
+    }
 }
 
 // 새 교환 알림 정보를 담는 API 모델

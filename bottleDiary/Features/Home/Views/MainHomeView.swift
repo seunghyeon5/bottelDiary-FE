@@ -56,7 +56,7 @@ struct MainHomeView: View {
             UserProfileView(viewModel: viewModel)
         }
         .sheet(isPresented: $isShowingNotifications) {
-            MatchNotificationsView(viewModel: viewModel)
+            PendingExchangeView(viewModel: viewModel)
         }
         .sheet(isPresented: $isShowingDiaryFilters) {
             DiaryFilterView(viewModel: viewModel)
@@ -71,7 +71,8 @@ struct MainHomeView: View {
                 .presentationDetents([.large])
         }
         .task {
-            await viewModel.loadMatchNotifications()
+            await viewModel.loadPendingExchanges()
+            await viewModel.loadExchangeConnections()
         }
     }
 
@@ -89,7 +90,7 @@ struct MainHomeView: View {
             Button {
                 isShowingNotifications = true
             } label: {
-                Image(systemName: viewModel.matchNotifications.contains(where: { !$0.read }) ? "bell.badge.fill" : "bell")
+                Image(systemName: viewModel.hasPendingExchangeNotification ? "bell.badge.fill" : "bell")
             }
             if viewModel.selectedTab == .myStories {
                 Button {
@@ -258,6 +259,10 @@ struct MainHomeView: View {
                         ForEach(viewModel.exchangeStories) { story in
                             ExchangeCardView(story: story) {
                                 viewModel.closeExchange(story)
+                            } block: {
+                                viewModel.blockExchange(story)
+                            } rematch: {
+                                viewModel.rematchExchange(story)
                             }
                         }
                     }

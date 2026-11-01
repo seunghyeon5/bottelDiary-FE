@@ -159,6 +159,8 @@ struct DiaryCardView: View {
 struct ExchangeCardView: View {
     let story: ExchangeStory
     let disconnect: () -> Void
+    let block: () -> Void
+    let rematch: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -167,14 +169,21 @@ struct ExchangeCardView: View {
                     .font(.headline)
                 Spacer()
                 if let status = story.status {
-                    Text(status == "ACTIVE" ? "연결 중" : "연결 종료")
+                    Text(status == "PENDING" ? "답장 대기" : status == "COMPLETED" ? "연결 중" : "연결 종료")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(status == "ACTIVE" ? Color.green : Color.secondary)
+                        .foregroundStyle(status == "PENDING" || status == "COMPLETED" ? Color.green : Color.secondary)
                 }
-                Button("종료") {
-                    disconnect()
+                if story.status == "REJECTED" || story.status == "EXPIRED" {
+                    Button("재매칭") { rematch() }
+                        .font(.caption.weight(.semibold))
+                } else {
+                    Menu {
+                        Button("교환 종료", role: .destructive) { disconnect() }
+                        Button("상대 차단", role: .destructive) { block() }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
                 }
-                .font(.caption.weight(.semibold))
             }
 
             VStack(alignment: .leading, spacing: 8) {

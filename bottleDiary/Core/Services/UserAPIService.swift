@@ -241,6 +241,78 @@ struct UserAPIService {
         try validate(response: response, data: data, fallback: "알림 읽음 처리에 실패했습니다.")
     }
 
+    // 나에게 도착해 답장을 기다리는 일기 목록을 조회
+    func fetchMatchInbox() async throws -> [DiaryExchangeResponsePayload] {
+        let url = baseURL.appendingPathComponent("api/matches/inbox")
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url, method: "GET"))
+        try validate(response: response, data: data, fallback: "수신 대기 일기를 불러오지 못했습니다.")
+        return try JSONDecoder().decode([DiaryExchangeResponsePayload].self, from: data)
+    }
+
+    // 받은 일기에 답장 일기를 작성해 교환을 완료
+    func replyToMatch(exchangeId: Int, request: DiaryCreateRequest) async throws -> DiaryExchangeResponsePayload {
+        let url = baseURL.appendingPathComponent("api/matches/\(exchangeId)/reply")
+        var urlRequest = authorizedRequest(url: url, method: "POST")
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.httpBody = try JSONEncoder().encode(request)
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        try validate(response: response, data: data, fallback: "답장 전송에 실패했습니다.")
+        return try JSONDecoder().decode(DiaryExchangeResponsePayload.self, from: data)
+    }
+
+    // 받은 일기 교환 요청을 거절
+    func rejectMatch(exchangeId: Int) async throws -> DiaryExchangeResponsePayload {
+        let url = baseURL.appendingPathComponent("api/matches/\(exchangeId)/reject")
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url, method: "POST"))
+        try validate(response: response, data: data, fallback: "교환 요청 거절에 실패했습니다.")
+        return try JSONDecoder().decode(DiaryExchangeResponsePayload.self, from: data)
+    }
+
+    // 답장이 오지 않았거나 상대가 없었던 일기를 다시 매칭
+    func matchDiary(diaryId: Int) async throws -> DiaryExchangeResponsePayload? {
+        let url = baseURL.appendingPathComponent("api/matches")
+        var urlRequest = authorizedRequest(url: url, method: "POST")
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.httpBody = try JSONEncoder().encode(MatchCreateRequest(diaryId: diaryId))
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        try validate(response: response, data: data, fallback: "재매칭 요청에 실패했습니다.")
+        guard !data.isEmpty else { return nil }
+        return try JSONDecoder().decode(DiaryExchangeResponsePayload.self, from: data)
+    }
+
+    // 내가 보내거나 받은 교환 요청의 상태를 조회
+    func fetchMatchConnections() async throws -> [DiaryExchangeResponsePayload] {
+        let url = baseURL.appendingPathComponent("api/matches")
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url, method: "GET"))
+        try validate(response: response, data: data, fallback: "교환 목록을 불러오지 못했습니다.")
+        return try JSONDecoder().decode([DiaryExchangeResponsePayload].self, from: data)
+    }
+
+    // 교환 연결을 종료
+    func disconnectMatch(exchangeId: Int) async throws {
+        let url = baseURL.appendingPathComponent("api/matches/\(exchangeId)")
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url, method: "DELETE"))
+        try validate(response: response, data: data, fallback: "교환 종료에 실패했습니다.")
+    }
+
+    // 상대를 차단
+    func blockUser(userId: Int) async throws {
+        let url = baseURL.appendingPathComponent("api/matches/blocks/\(userId)")
+        let (data, response) = try await URLSession.shared.data(for: urlRequest(url: url, method: "POST"))
+        try validate(response: response, data: data, fallback: "상대 차단에 실패했습니다.")
+    }
+
+    // 차단한 상대를 다시 허용
+    func unblockUser(userId: Int) async throws {
+        let url = baseURL.appendingPathComponent("api/matches/blocks/\(userId)")
+        let (data, response) = try await URLSession.shared.data(for: urlRequest(url: url, method: "DELETE"))
+        try validate(response: response, data: data, fallback: "차단 해제에 실패했습니다.")
+    }
+
+    private func urlRequest(url: URL, method: String) -> URLRequest {
+        authorizedRequest(url: url, method: method)
+    }
+
     // 인증 API 응답의 성공 여부를 공통으로 확인
     private func validate(response: URLResponse, data: Data, fallback: String) throws {
         guard let httpResponse = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
