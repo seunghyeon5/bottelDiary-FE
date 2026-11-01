@@ -19,6 +19,7 @@ struct MainHomeView: View {
             VStack(spacing: 0) {
                 header
                 tabBar
+                pendingExchangeBanner
                 content
             }
 
@@ -68,6 +69,9 @@ struct MainHomeView: View {
         .sheet(item: $selectedRecovery) { recovery in
             DiaryDetailView(diary: recovery.diary, viewModel: viewModel, isRecoveryMode: true, recovery: recovery)
                 .presentationDetents([.large])
+        }
+        .task {
+            await viewModel.loadMatchNotifications()
         }
     }
 
@@ -133,6 +137,30 @@ struct MainHomeView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 14)
+    }
+
+    // 답장 대기 중인 일기가 있음을 홈 상단에 안내하는 배너
+    @ViewBuilder
+    private var pendingExchangeBanner: some View {
+        if viewModel.hasPendingExchangeNotification {
+            Button {
+                isShowingNotifications = true
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "envelope.badge")
+                    Text("답장 대기중인 일기가 있습니다.")
+                        .font(.footnote.weight(.semibold))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                }
+                .foregroundStyle(Color(hex: "#25476D"))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
+                .background(Color(hex: "#DCEFFF"))
+            }
+        }
     }
 
     // 선택된 탭에 따라 목록을 보여주는 본문 영역

@@ -47,6 +47,11 @@ final class AppViewModel: ObservableObject {
     }
     @Published var toastMessage = ""
 
+    // 읽지 않은 교환 알림이 있으면 수신 대기 배너를 표시
+    var hasPendingExchangeNotification: Bool {
+        matchNotifications.contains { !$0.read }
+    }
+
     init() {
         recoverableDiaries = loadRecoverableDiaries()
         removeExpiredRecoveries()
@@ -331,7 +336,11 @@ final class AppViewModel: ObservableObject {
         draftContent = ""
         draftMood = "기대"
         diarySaveMessage = ""
-        showToast("오늘의 일기를 저장했습니다.")
+        if response.exchange == nil {
+            showToast("일기가 전달되었습니다. 답장을 기다리고 있어요.")
+        } else {
+            showToast("오늘의 일기를 저장했습니다.")
+        }
         return true
     }
 

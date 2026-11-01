@@ -40,7 +40,7 @@ struct MatchNotificationsView: View {
                     .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle("알림")
+            .navigationTitle("수신 대기")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
