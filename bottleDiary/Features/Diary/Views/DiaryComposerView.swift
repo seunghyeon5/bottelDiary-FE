@@ -12,10 +12,10 @@ struct DiaryComposerView: View {
                 Color(hex: "#DCEFFF").ignoresSafeArea()
 
                 VStack(alignment: .leading, spacing: 18) {
-                    HStack {
-                        Text("🕯️")
-                            .font(.system(size: 42))
-                    }
+//                    HStack {
+//                        Text("🕯️")
+//                            .font(.system(size: 42))
+//                    }
 
                     Text("오늘 늘 내용이 메모로 적힌다면?")
                         .font(.footnote.weight(.semibold))
