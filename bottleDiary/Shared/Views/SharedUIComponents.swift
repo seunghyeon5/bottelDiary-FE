@@ -158,6 +158,7 @@ struct DiaryCardView: View {
 // 다른 이야기 탭에서 사용하는 교환 카드 컴포넌트
 struct ExchangeCardView: View {
     let story: ExchangeStory
+    let onTap: () -> Void
     let disconnect: () -> Void
     let block: () -> Void
     let rematch: () -> Void
@@ -214,6 +215,8 @@ struct ExchangeCardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.white)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onTapGesture(perform: onTap)
     }
 }
 

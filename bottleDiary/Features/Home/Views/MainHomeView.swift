@@ -10,6 +10,7 @@ struct MainHomeView: View {
     @State private var isShowingDiaryFilters = false
     @State private var isShowingRecoveryList = false
     @State private var selectedRecovery: DeletedDiaryRecovery?
+    @State private var selectedExchange: ExchangeStory?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -68,6 +69,10 @@ struct MainHomeView: View {
         }
         .sheet(item: $selectedRecovery) { recovery in
             DiaryDetailView(diary: recovery.diary, viewModel: viewModel, isRecoveryMode: true, recovery: recovery)
+                .presentationDetents([.large])
+        }
+        .sheet(item: $selectedExchange) { exchange in
+            ExchangeStoryDetailView(story: exchange)
                 .presentationDetents([.large])
         }
         .task {
@@ -258,6 +263,8 @@ struct MainHomeView: View {
                     VStack(spacing: 16) {
                         ForEach(viewModel.exchangeStories) { story in
                             ExchangeCardView(story: story) {
+                                selectedExchange = story
+                            } disconnect: {
                                 viewModel.closeExchange(story)
                             } block: {
                                 viewModel.blockExchange(story)
