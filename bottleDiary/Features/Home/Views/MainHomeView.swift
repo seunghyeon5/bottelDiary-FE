@@ -77,6 +77,7 @@ struct MainHomeView: View {
         }
         .task {
             await viewModel.loadPendingExchanges()
+            await viewModel.loadBlockedUsers()
             await viewModel.loadExchangeConnections()
         }
     }

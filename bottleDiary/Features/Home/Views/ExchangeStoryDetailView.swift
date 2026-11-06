@@ -36,7 +36,7 @@ struct ExchangeStoryDetailView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("익명의 친구와 교환 중")
                     .font(.headline)
-                Text("(story.daysRemaining)일째 기록")
+                Text("\(story.daysRemaining)일째 기록")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

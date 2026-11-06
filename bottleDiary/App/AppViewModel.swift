@@ -100,6 +100,7 @@ final class AppViewModel: ObservableObject {
 
             // 히스토리 조회가 실패해도 로그인 성공 후 교환 화면 진입은 가능하도록 별도 조회
             await loadPendingExchanges()
+            await loadBlockedUsers()
             await loadExchangeConnections()
         } catch {
             authToken = nil
@@ -574,7 +575,14 @@ final class AppViewModel: ObservableObject {
     func loadExchangeConnections() async {
         do {
             let connections = try await userAPIService.fetchMatchConnections()
+            let blockedUserIDs = Set(blockedUsers.map(\.userId))
             exchangeStories = connections.compactMap { exchange in
+                guard exchange.status != "CANCELLED" else { return nil }
+                let partnerUserID = exchange.senderUserId == currentUserId
+                    ? exchange.recipientUserId
+                    : exchange.senderUserId
+                guard partnerUserID == nil || !blockedUserIDs.contains(partnerUserID!) else { return nil }
+
                 let myDiary = exchange.myDiary ?? DiaryResponsePayload(
                     id: nil,
                     userId: nil,
@@ -597,9 +605,9 @@ final class AppViewModel: ObservableObject {
                 )
                 return ExchangeStory(
                     exchangeId: exchange.exchangeId,
-                    partnerUserId: exchange.senderUserId == currentUserId ? exchange.recipientUserId : exchange.senderUserId,
+                    partnerUserId: partnerUserID,
                     partnerName: "익명의 친구",
-                    daysRemaining: remainingDays(until: exchange.expiresAt),
+                    daysRemaining: exchangeDays(from: exchange.exchangeDate),
                     myEntry: diaryEntry(from: myDiary, fallbackDate: exchange.exchangeDate),
                     partnerEntry: diaryEntry(from: partnerDiary, fallbackDate: exchange.exchangeDate),
                     isActive: exchange.active ?? false,
@@ -734,21 +742,13 @@ final class AppViewModel: ObservableObject {
         )
     }
 
-    private func remainingDays(until expiresAt: String?) -> Int {
-        guard let expiresAt else { return 1 }
-        let date = ISO8601DateFormatter().date(from: expiresAt)
-            ?? localDateTimeFormatter.date(from: expiresAt)
-        guard let date else { return 1 }
-        return max(0, Int(ceil(date.timeIntervalSinceNow / (24 * 60 * 60))))
-    }
-
-    // Spring LocalDateTime 응답(타임존 없는 문자열)을 해석
-    private var localDateTimeFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-        return formatter
+    // 교환 시작일을 기준으로 현재 몇 일째인지 계산
+    private func exchangeDays(from exchangeDate: String?) -> Int {
+        guard let exchangeDate,
+              let date = serverDateFormatter.date(from: exchangeDate) else { return 1 }
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        let startOfExchange = Calendar.current.startOfDay(for: date)
+        return max(1, (Calendar.current.dateComponents([.day], from: startOfExchange, to: startOfToday).day ?? 0) + 1)
     }
 
     // 만료된 복구 항목을 제거
@@ -784,6 +784,7 @@ final class AppViewModel: ObservableObject {
         Task {
             do {
                 try await userAPIService.disconnectMatch(exchangeId: exchangeId)
+                exchangeStories.removeAll { $0.id == story.id }
                 await loadExchangeConnections()
                 showToast("교환 연결을 종료했습니다.")
             } catch {
@@ -799,6 +800,8 @@ final class AppViewModel: ObservableObject {
         Task {
             do {
                 try await userAPIService.blockUser(userId: partnerUserId)
+                exchangeStories.removeAll { $0.id == story.id }
+                await loadBlockedUsers()
                 await loadExchangeConnections()
                 showToast("상대를 차단했습니다.")
             } catch {
