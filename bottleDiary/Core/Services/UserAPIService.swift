@@ -309,6 +309,14 @@ struct UserAPIService {
         try validate(response: response, data: data, fallback: "차단 해제에 실패했습니다.")
     }
 
+    // 로그인 사용자가 차단한 사용자 목록을 조회
+    func fetchBlockedUsers() async throws -> [BlockedUserResponse] {
+        let url = baseURL.appendingPathComponent("api/matches/blocks")
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url, method: "GET"))
+        try validate(response: response, data: data, fallback: "차단 목록을 불러오지 못했습니다.")
+        return try JSONDecoder().decode([BlockedUserResponse].self, from: data)
+    }
+
     private func urlRequest(url: URL, method: String) -> URLRequest {
         authorizedRequest(url: url, method: method)
     }

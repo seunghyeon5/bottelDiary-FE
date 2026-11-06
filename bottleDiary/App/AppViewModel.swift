@@ -30,6 +30,7 @@ final class AppViewModel: ObservableObject {
     @Published var diaryEntries: [DiaryEntry] = []
     @Published var exchangeStories: [ExchangeStory] = []
     @Published var pendingExchanges: [DiaryExchangeResponsePayload] = []
+    @Published var blockedUsers: [BlockedUserResponse] = []
     @Published var draftTitle = ""
     @Published var draftContent = ""
     @Published var draftMood = "기대"
@@ -513,6 +514,30 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    // 로그인 사용자의 차단 목록을 불러옴
+    func loadBlockedUsers() async {
+        do {
+            blockedUsers = try await userAPIService.fetchBlockedUsers()
+        } catch {
+            blockedUsers = []
+            if isSessionExpired(error) { logout() }
+        }
+    }
+
+    // 선택한 사용자의 차단을 해제하고 목록에서 제거
+    func unblockUser(_ blockedUser: BlockedUserResponse) async -> Bool {
+        do {
+            try await userAPIService.unblockUser(userId: blockedUser.userId)
+            blockedUsers.removeAll { $0.userId == blockedUser.userId }
+            showToast("차단을 해제했습니다.")
+            return true
+        } catch {
+            accountMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if isSessionExpired(error) { logout() }
+            return false
+        }
+    }
+
     // 로그인 사용자의 계정을 탈퇴하고 인증 상태를 초기화
     func withdraw() async -> Bool {
         do {
@@ -666,6 +691,7 @@ final class AppViewModel: ObservableObject {
         diaryEntries = []
         exchangeStories = []
         pendingExchanges = []
+        blockedUsers = []
         matchNotifications = []
         latestExchange = nil
         recoverableDiaries = []

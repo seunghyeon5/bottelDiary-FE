@@ -159,6 +159,14 @@ struct UserResponsePayload: Codable {
     let phoneNum: String?
 }
 
+// 차단 목록에서 사용자 정보를 표시하기 위한 API 모델
+struct BlockedUserResponse: Codable, Identifiable {
+    let userId: Int
+    let nickname: String
+
+    var id: Int { userId }
+}
+
 // 로그인 사용자의 마이페이지 정보를 담는 API 모델
 typealias UserProfileResponse = UserResponsePayload
 

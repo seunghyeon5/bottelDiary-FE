@@ -5,6 +5,7 @@ struct UserProfileView: View {
     @ObservedObject var viewModel: AppViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var isShowingWithdrawDialog = false
+    @State private var isShowingBlockedUsers = false
 
     var body: some View {
         NavigationStack {
@@ -20,6 +21,22 @@ struct UserProfileView: View {
                     } else {
                         ProgressView("사용자 정보를 불러오는 중")
                             .frame(maxWidth: .infinity)
+                    }
+
+                    Button {
+                        isShowingBlockedUsers = true
+                    } label: {
+                        HStack {
+                            Text("차단 목록")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .foregroundStyle(Color(hex: "#25476D"))
+                        .padding(16)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.white.opacity(0.8))
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
 
                     if !viewModel.accountMessage.isEmpty {
@@ -43,6 +60,10 @@ struct UserProfileView: View {
             }
             .navigationTitle("마이페이지")
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $isShowingBlockedUsers) {
+                BlockedUserListView(viewModel: viewModel)
+                    .presentationDetents([.medium, .large])
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("닫기") { dismiss() }
