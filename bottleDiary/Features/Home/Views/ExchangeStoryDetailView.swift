@@ -16,6 +16,10 @@ struct ExchangeStoryDetailView: View {
                         diarySection(title: "내 이야기", entry: story.myEntry)
                         Divider()
                         diarySection(title: "다른 이야기", entry: story.partnerEntry)
+                        if !story.messages.isEmpty {
+                            Divider()
+                            messageHistory
+                        }
                         if story.status == "PENDING" {
                             Text("24시간 이내에 답장하지 않으면 서로의 연결이 종료됩니다.")
                                 .font(.caption)
@@ -46,7 +50,7 @@ struct ExchangeStoryDetailView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 if story.status == "PENDING" {
-                    Text("답장까지 약 \(story.remainingHours)시간 남았어요")
+                    Text("만료까지 약 \(story.remainingHours)시간 남았어요")
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(Color(hex: "#C47732"))
                 }
@@ -92,10 +96,35 @@ struct ExchangeStoryDetailView: View {
         }
     }
 
+    // 교환 중 주고받은 누적 메시지를 시간순으로 표시
+    private var messageHistory: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("교환 기록")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(Color(hex: "#25476D"))
+
+            ForEach(Array(story.messages.enumerated()), id: \.offset) { index, message in
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(index.isMultiple(of: 2) ? "교환 일기" : "답장 일기")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text(message.title)
+                        .font(.subheadline.weight(.semibold))
+                    Text(message.content)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.white.opacity(0.72))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+        }
+    }
+
     private var statusText: String {
         switch story.status {
-        case "COMPLETED": return "연결 중"
-        case "PENDING": return "답장 대기"
+        case "COMPLETED", "PENDING": return story.isMyTurn ? "내 답장 차례" : "상대 답장 대기"
         default: return "연결 종료"
         }
     }

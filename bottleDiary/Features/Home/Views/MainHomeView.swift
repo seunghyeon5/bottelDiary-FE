@@ -247,38 +247,52 @@ struct MainHomeView: View {
                 .padding(.bottom, 120)
             }
         case .otherStories:
-            if viewModel.exchangeStories.isEmpty {
-                VStack(spacing: 10) {
-                    Spacer()
-                    Text("아직 연결된 사람이 없습니다.")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Text("당신의 하루를 적어서\n곧 누군가의 하루와 마주해보세요.")
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.white.opacity(0.72))
-                    Spacer()
-                }
-                .padding(.bottom, 80)
-            } else {
-                ScrollView {
-                    VStack(spacing: 16) {
-                        ForEach(viewModel.exchangeStories) { story in
-                            ExchangeCardView(story: story) {
-                                selectedExchange = story
-                            } disconnect: {
-                                viewModel.closeExchange(story)
-                            } block: {
-                                viewModel.blockExchange(story)
-                            } rematch: {
-                                viewModel.rematchExchange(story)
+            VStack(spacing: 0) {
+                exchangeNotice
+
+                if viewModel.exchangeStories.isEmpty {
+                    VStack(spacing: 10) {
+                        Spacer()
+                        Text("아직 연결된 사람이 없습니다.")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text("당신의 하루를 적어서\n곧 누군가의 하루와 마주해보세요.")
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.white.opacity(0.72))
+                        Spacer()
+                    }
+                    .padding(.bottom, 80)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            ForEach(viewModel.exchangeStories) { story in
+                                ExchangeCardView(story: story) {
+                                    selectedExchange = story
+                                } disconnect: {
+                                    viewModel.closeExchange(story)
+                                } block: {
+                                    viewModel.blockExchange(story)
+                                } rematch: {
+                                    viewModel.rematchExchange(story)
+                                }
                             }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 14)
+                        .padding(.bottom, 120)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
-                    .padding(.bottom, 120)
                 }
             }
         }
+    }
+
+    // 교환 답장 기한 안내 문구
+    private var exchangeNotice: some View {
+        Text("24시간 이내에 답장하지 않으면 서로의 연결이 종료됩니다.")
+            .font(.caption)
+            .foregroundStyle(.white.opacity(0.78))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
     }
 }

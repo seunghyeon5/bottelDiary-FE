@@ -81,17 +81,21 @@ struct ExchangeStory: Identifiable {
     let partnerName: String
     let daysRemaining: Int
     let remainingHours: Int
+    let messages: [DiaryEntry]
+    let isMyTurn: Bool
     let myEntry: DiaryEntry
     let partnerEntry: DiaryEntry
     let isActive: Bool
     let status: String?
 
-    init(exchangeId: Int? = nil, partnerUserId: Int? = nil, partnerName: String, daysRemaining: Int, remainingHours: Int = 24, myEntry: DiaryEntry, partnerEntry: DiaryEntry, isActive: Bool, status: String? = nil) {
+    init(exchangeId: Int? = nil, partnerUserId: Int? = nil, partnerName: String, daysRemaining: Int, remainingHours: Int = 24, messages: [DiaryEntry] = [], isMyTurn: Bool = false, myEntry: DiaryEntry, partnerEntry: DiaryEntry, isActive: Bool, status: String? = nil) {
         self.exchangeId = exchangeId
         self.partnerUserId = partnerUserId
         self.partnerName = partnerName
         self.daysRemaining = daysRemaining
         self.remainingHours = remainingHours
+        self.messages = messages
+        self.isMyTurn = isMyTurn
         self.myEntry = myEntry
         self.partnerEntry = partnerEntry
         self.isActive = isActive
@@ -226,6 +230,8 @@ struct DiaryExchangeResponsePayload: Codable, Identifiable {
     let senderUserId: Int?
     let recipientUserId: Int?
     let expiresAt: String?
+    let nextReplyUserId: Int?
+    let messages: [DiaryExchangeMessageResponsePayload]?
     let myDiary: DiaryResponsePayload?
     let partnerDiary: DiaryResponsePayload?
     let active: Bool?
@@ -235,6 +241,29 @@ struct DiaryExchangeResponsePayload: Codable, Identifiable {
 
     private var diaryIdFallback: Int {
         myDiary?.id ?? partnerDiary?.id ?? 0
+    }
+}
+
+// 교환 중 누적된 답장 일기 메시지 API 모델
+struct DiaryExchangeMessageResponsePayload: Codable, Identifiable {
+    let messageId: Int?
+    let authorUserId: Int?
+    let diaryDate: String?
+    let title: String?
+    let content: String?
+    let mood: String?
+    let createdAt: String?
+
+    var id: Int { messageId ?? 0 }
+
+    private enum CodingKeys: String, CodingKey {
+        case messageId = "id"
+        case authorUserId
+        case diaryDate
+        case title
+        case content
+        case mood
+        case createdAt
     }
 }
 

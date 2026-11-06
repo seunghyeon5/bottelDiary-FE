@@ -21,6 +21,9 @@ struct RootView: View {
         .sheet(isPresented: $isPresentingComposer) {
             DiaryComposerView(viewModel: viewModel)
                 .presentationDetents([.large])
+                .onDisappear {
+                    viewModel.resetDiaryDraft()
+                }
         }
         .fullScreenCover(item: $viewModel.latestExchange) { story in
             ExchangeResultView(story: story) {

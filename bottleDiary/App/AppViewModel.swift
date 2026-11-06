@@ -348,6 +348,14 @@ final class AppViewModel: ObservableObject {
         return true
     }
 
+    // 일기 작성 화면을 닫을 때 임시 입력값을 초기화
+    func resetDiaryDraft() {
+        draftTitle = ""
+        draftContent = ""
+        draftMood = "기대"
+        diarySaveMessage = ""
+    }
+
     // 로그인 완료 후 사용자 정보를 화면 상태에 반영
     private func applyLoggedInUser(_ user: UserResponsePayload) {
         currentUserId = user.id
@@ -583,7 +591,14 @@ final class AppViewModel: ObservableObject {
                     : exchange.senderUserId
                 guard partnerUserID == nil || !blockedUserIDs.contains(partnerUserID!) else { return nil }
 
-                let myDiary = exchange.myDiary ?? DiaryResponsePayload(
+                let messagePayloads = exchange.messages ?? []
+                let messageEntries = messagePayloads.map { diaryEntry(from: $0, fallbackDate: exchange.exchangeDate) }
+                let latestMyMessage = messagePayloads.last { $0.authorUserId == currentUserId }
+                let latestPartnerMessage = messagePayloads.last { $0.authorUserId != currentUserId }
+                let myDiaryPayload = exchange.myDiary ?? latestMyMessage.map { diaryPayload(from: $0) }
+                let partnerDiaryPayload = exchange.partnerDiary ?? latestPartnerMessage.map { diaryPayload(from: $0) }
+
+                let myDiary = myDiaryPayload ?? DiaryResponsePayload(
                     id: nil,
                     userId: nil,
                     diaryDate: exchange.exchangeDate,
@@ -593,7 +608,7 @@ final class AppViewModel: ObservableObject {
                     createdAt: nil,
                     updatedAt: nil
                 )
-                let partnerDiary = exchange.partnerDiary ?? DiaryResponsePayload(
+                let partnerDiary = partnerDiaryPayload ?? DiaryResponsePayload(
                     id: nil,
                     userId: nil,
                     diaryDate: exchange.exchangeDate,
@@ -609,6 +624,8 @@ final class AppViewModel: ObservableObject {
                     partnerName: "익명의 친구",
                     daysRemaining: exchangeDays(from: exchange.exchangeDate),
                     remainingHours: remainingHours(until: exchange.expiresAt),
+                    messages: messageEntries,
+                    isMyTurn: exchange.nextReplyUserId == currentUserId,
                     myEntry: diaryEntry(from: myDiary, fallbackDate: exchange.exchangeDate),
                     partnerEntry: diaryEntry(from: partnerDiary, fallbackDate: exchange.exchangeDate),
                     isActive: exchange.active ?? false,
@@ -740,6 +757,29 @@ final class AppViewModel: ObservableObject {
             title: payload.title ?? "제목 없음",
             content: payload.content ?? "",
             mood: payload.mood ?? "기록"
+        )
+    }
+
+    private func diaryEntry(from payload: DiaryExchangeMessageResponsePayload, fallbackDate: String?) -> DiaryEntry {
+        DiaryEntry(
+            serverId: payload.messageId,
+            dateText: formattedToday(from: payload.diaryDate ?? fallbackDate),
+            title: payload.title ?? "제목 없음",
+            content: payload.content ?? "",
+            mood: payload.mood ?? "기록"
+        )
+    }
+
+    private func diaryPayload(from message: DiaryExchangeMessageResponsePayload) -> DiaryResponsePayload {
+        DiaryResponsePayload(
+            id: message.messageId,
+            userId: message.authorUserId,
+            diaryDate: message.diaryDate,
+            title: message.title,
+            content: message.content,
+            mood: message.mood,
+            createdAt: message.createdAt,
+            updatedAt: message.createdAt
         )
     }
 

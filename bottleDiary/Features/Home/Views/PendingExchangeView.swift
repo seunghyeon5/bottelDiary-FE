@@ -66,9 +66,9 @@ struct PendingExchangeView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color(hex: "#25476D"))
             }
-            Text(exchange.partnerDiary?.title ?? "새로운 일기가 도착했습니다")
+            Text(exchange.partnerDiary?.title ?? exchange.messages?.last?.title ?? "새로운 일기가 도착했습니다")
                 .font(.headline)
-            Text(exchange.partnerDiary?.content ?? "내용을 확인하고 답장해보세요.")
+            Text(exchange.partnerDiary?.content ?? exchange.messages?.last?.content ?? "내용을 확인하고 답장해보세요.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)

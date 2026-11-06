@@ -23,10 +23,10 @@ struct PendingExchangeDetailView: View {
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(.secondary)
 
-                        Text(exchange.partnerDiary?.title ?? "새로운 일기")
+                        Text(exchange.partnerDiary?.title ?? exchange.messages?.last?.title ?? "새로운 일기")
                             .font(.title3.weight(.bold))
 
-                        Text(exchange.partnerDiary?.content ?? "")
+                        Text(exchange.partnerDiary?.content ?? exchange.messages?.last?.content ?? "")
                             .foregroundStyle(.black.opacity(0.78))
                             .lineSpacing(5)
 
