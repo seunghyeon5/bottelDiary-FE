@@ -16,6 +16,12 @@ struct ExchangeStoryDetailView: View {
                         diarySection(title: "내 이야기", entry: story.myEntry)
                         Divider()
                         diarySection(title: "다른 이야기", entry: story.partnerEntry)
+                        if story.status == "PENDING" {
+                            Text("24시간 이내에 답장하지 않으면 서로의 연결이 종료됩니다.")
+                                .font(.caption)
+                                .foregroundStyle(Color(hex: "#9A6A3A"))
+                                .padding(.top, 2)
+                        }
                     }
                     .padding(20)
                 }
@@ -39,6 +45,11 @@ struct ExchangeStoryDetailView: View {
                 Text("\(story.daysRemaining)일째 기록")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                if story.status == "PENDING" {
+                    Text("답장까지 약 \(story.remainingHours)시간 남았어요")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color(hex: "#C47732"))
+                }
             }
             Spacer()
             Text(statusText)

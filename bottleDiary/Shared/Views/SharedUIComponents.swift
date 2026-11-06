@@ -170,7 +170,7 @@ struct ExchangeCardView: View {
                     .font(.headline)
                 Spacer()
                 if let status = story.status {
-                    Text(status == "PENDING" ? "답장 대기" : status == "COMPLETED" ? "연결 중" : "연결 종료")
+                    Text(status == "PENDING" ? "답장 (story.remainingHours)시간 남음" : status == "COMPLETED" ? "연결 중" : "연결 종료")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(status == "PENDING" || status == "COMPLETED" ? Color.green : Color.secondary)
                 }
@@ -209,6 +209,13 @@ struct ExchangeCardView: View {
                 Text(story.partnerEntry.content)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            if story.status == "PENDING" {
+                Text("24시간 이내에 답장하지 않으면 서로의 연결이 종료됩니다.")
+                    .font(.caption2)
+                    .foregroundStyle(Color(hex: "#9A6A3A"))
+                    .padding(.top, 2)
             }
         }
         .padding(16)

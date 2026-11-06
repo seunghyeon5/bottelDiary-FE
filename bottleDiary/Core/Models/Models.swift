@@ -80,16 +80,18 @@ struct ExchangeStory: Identifiable {
     let partnerUserId: Int?
     let partnerName: String
     let daysRemaining: Int
+    let remainingHours: Int
     let myEntry: DiaryEntry
     let partnerEntry: DiaryEntry
     let isActive: Bool
     let status: String?
 
-    init(exchangeId: Int? = nil, partnerUserId: Int? = nil, partnerName: String, daysRemaining: Int, myEntry: DiaryEntry, partnerEntry: DiaryEntry, isActive: Bool, status: String? = nil) {
+    init(exchangeId: Int? = nil, partnerUserId: Int? = nil, partnerName: String, daysRemaining: Int, remainingHours: Int = 24, myEntry: DiaryEntry, partnerEntry: DiaryEntry, isActive: Bool, status: String? = nil) {
         self.exchangeId = exchangeId
         self.partnerUserId = partnerUserId
         self.partnerName = partnerName
         self.daysRemaining = daysRemaining
+        self.remainingHours = remainingHours
         self.myEntry = myEntry
         self.partnerEntry = partnerEntry
         self.isActive = isActive

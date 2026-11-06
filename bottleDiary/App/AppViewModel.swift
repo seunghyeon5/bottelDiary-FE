@@ -608,6 +608,7 @@ final class AppViewModel: ObservableObject {
                     partnerUserId: partnerUserID,
                     partnerName: "익명의 친구",
                     daysRemaining: exchangeDays(from: exchange.exchangeDate),
+                    remainingHours: remainingHours(until: exchange.expiresAt),
                     myEntry: diaryEntry(from: myDiary, fallbackDate: exchange.exchangeDate),
                     partnerEntry: diaryEntry(from: partnerDiary, fallbackDate: exchange.exchangeDate),
                     isActive: exchange.active ?? false,
@@ -749,6 +750,23 @@ final class AppViewModel: ObservableObject {
         let startOfToday = Calendar.current.startOfDay(for: Date())
         let startOfExchange = Calendar.current.startOfDay(for: date)
         return max(1, (Calendar.current.dateComponents([.day], from: startOfExchange, to: startOfToday).day ?? 0) + 1)
+    }
+
+    // 백엔드가 내려준 만료 시각을 기준으로 답장까지 남은 시간을 계산
+    private func remainingHours(until expiresAt: String?) -> Int {
+        guard let expiresAt,
+              let date = ISO8601DateFormatter().date(from: expiresAt)
+                ?? localDateTimeFormatter.date(from: expiresAt) else { return 0 }
+        return max(0, Int(ceil(date.timeIntervalSinceNow / 3600)))
+    }
+
+    // Spring LocalDateTime 응답(타임존 없는 문자열)을 해석
+    private var localDateTimeFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return formatter
     }
 
     // 만료된 복구 항목을 제거
